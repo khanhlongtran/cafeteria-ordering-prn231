@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using CafeteriaOrdering.API.Models;
 
 namespace CafeteriaOrdering.API
 {
@@ -14,7 +16,7 @@ namespace CafeteriaOrdering.API
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddDbContext<prn231Context>(options =>
+            builder.Services.AddDbContext<CafeteriaOrderingDBContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             var app = builder.Build();
