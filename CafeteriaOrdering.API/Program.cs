@@ -14,6 +14,9 @@ namespace CafeteriaOrdering.API
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddDbContext<prn231Context>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
