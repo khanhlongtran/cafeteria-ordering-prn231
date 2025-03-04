@@ -1,15 +1,18 @@
 using System.Threading.Tasks;
+using CafeteriaOrdering.API.Repositories;
 
 namespace CafeteriaOrdering.API.Services
 {
-    public interface IMealDeliveryService
-    {
-        Task DeliverMealAsync(int orderId);
-    }
-
     public class MealDeliveryService : IMealDeliveryService
     {
-        public async Task DeliverMealAsync(int orderId)
+        private readonly IOrderRepository _repository;
+
+        public MealDeliveryService(IOrderRepository repository)
+        {
+            _repository = repository;
+        }
+
+        public async Task<bool> DeliverMealAsync(int orderId)
         {
             // Implementation for delivering the meal
             // This is a placeholder for the actual delivery logic
@@ -18,6 +21,8 @@ namespace CafeteriaOrdering.API.Services
                 // Simulate meal delivery process
                 System.Console.WriteLine($"Delivering meal for order ID: {orderId}");
             });
+
+            return true;
         }
     }
 }

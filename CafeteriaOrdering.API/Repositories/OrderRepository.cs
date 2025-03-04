@@ -22,7 +22,8 @@ namespace CafeteriaOrdering.API.Repositories
 
         public async Task<IEnumerable<Order>> GetAllOrdersAsync()
         {
-            return await _context.Orders.ToListAsync();
+            // return await _context.Orders.ToListAsync();
+            return null;
         }
 
         public async Task AddOrderAsync(Order order)
