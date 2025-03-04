@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using CafeteriaOrdering.API.Models;
 using CafeteriaOrdering.API.Constants;
+using CafeteriaOrdering.API.Services;
 
 namespace CafeteriaOrdering.API.Controllers
 {
@@ -10,10 +11,12 @@ namespace CafeteriaOrdering.API.Controllers
     public class MealDeliveryController : ControllerBase
     {
         private readonly CafeteriaOrderingDBContext _context;
+        private readonly IMealDeliveryService _service;
 
-        public MealDeliveryController(CafeteriaOrderingDBContext context)
+        public MealDeliveryController(CafeteriaOrderingDBContext context, IMealDeliveryService mealDeliveryService)
         {
             _context = context;
+            _service = mealDeliveryService;
         }
 
         // GET: api/v1/delivery/orders
@@ -82,7 +85,9 @@ namespace CafeteriaOrdering.API.Controllers
                 return BadRequest("Invalid status");
             }
 
+            _context.Orders.Update(order);
             _context.SaveChanges();
+            _service.notifyUpdateOrderStatus(id, order.Status);
 
             return Ok("Successful");
         }
