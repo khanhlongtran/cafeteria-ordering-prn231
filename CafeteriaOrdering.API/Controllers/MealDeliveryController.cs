@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using CafeteriaOrdering.API.Services;
 
 namespace CafeteriaOrdering.API.Controllers
 {
@@ -8,12 +7,6 @@ namespace CafeteriaOrdering.API.Controllers
     [ApiController]
     public class MealDeliveryController : ControllerBase
     {
-        private readonly IMealDeliveryService _service;
-
-        public MealDeliveryController(IMealDeliveryService service)
-        {
-            _service = service;
-        }
 
         // GET: api/v1/delivery/orders
         [HttpGet]
