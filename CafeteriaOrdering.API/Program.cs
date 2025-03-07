@@ -12,7 +12,15 @@ namespace CafeteriaOrdering.API
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new InvalidOperationException("Connection string is not found in .env file.");
+            }
 
+            builder.Services.AddDbContext<CafeteriaOrderingDBContext>(options =>
+                options.UseSqlServer(connectionString)
+            );
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
