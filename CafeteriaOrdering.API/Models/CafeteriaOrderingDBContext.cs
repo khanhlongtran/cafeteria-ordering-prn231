@@ -28,21 +28,22 @@ namespace CafeteriaOrdering.API.Models
         public virtual DbSet<RevenueReport> RevenueReports { get; set; } = null!;
         public virtual DbSet<User> Users { get; set; } = null!;
 
-//        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//        {
-//            if (!optionsBuilder.IsConfigured)
-//            {
-//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-//                optionsBuilder.UseSqlServer("Server=LAPTOP-A6P8DBMT\\SQLEXPRESS;Database=CafeteriaOrderingDB;Trusted_Connection=True;MultipleActiveResultSets=true");
-//            }
-//        }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            string connectStr = config.GetConnectionString("DefaultConnection");
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseSqlServer(connectStr);
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<AccountActivity>(entity =>
             {
                 entity.HasKey(e => e.ActivityId)
-                    .HasName("PK__account___482FBD63255EB588");
+                    .HasName("PK__account___482FBD634140F0BA");
 
                 entity.ToTable("account_activity");
 
@@ -232,7 +233,7 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<MenuItem>(entity =>
             {
                 entity.HasKey(e => e.ItemId)
-                    .HasName("PK__menu_ite__52020FDD25A390D3");
+                    .HasName("PK__menu_ite__52020FDDBF75B32F");
 
                 entity.ToTable("menu_items");
 
@@ -362,7 +363,7 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<RecommendedMeal>(entity =>
             {
                 entity.HasKey(e => e.RecommendId)
-                    .HasName("PK__recommen__5D4DAA7192577175");
+                    .HasName("PK__recommen__5D4DAA71BAE95E10");
 
                 entity.ToTable("recommended_meals");
 
@@ -397,7 +398,7 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<RevenueReport>(entity =>
             {
                 entity.HasKey(e => e.ReportId)
-                    .HasName("PK__revenue___779B7C58B4418CC9");
+                    .HasName("PK__revenue___779B7C5857DCD586");
 
                 entity.ToTable("revenue_reports");
 
@@ -431,7 +432,7 @@ namespace CafeteriaOrdering.API.Models
             {
                 entity.ToTable("users");
 
-                entity.HasIndex(e => e.Email, "UQ__users__AB6E6164B21CD19C")
+                entity.HasIndex(e => e.Email, "UQ__users__AB6E616422567640")
                     .IsUnique();
 
                 entity.Property(e => e.UserId).HasColumnName("user_id");
