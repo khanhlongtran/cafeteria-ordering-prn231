@@ -19,7 +19,10 @@ namespace CafeteriaOrdering.API.Models
         public string? ItemType { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+<<<<<<< HEAD
         public int? CountItemsSold { get; set; }
+=======
+>>>>>>> main
 
         public virtual Menu Menu { get; set; } = null!;
         public virtual ICollection<OrderItem> OrderItems { get; set; }
