@@ -28,12 +28,28 @@ namespace CafeteriaOrdering.API.Models
         public virtual DbSet<RevenueReport> RevenueReports { get; set; } = null!;
         public virtual DbSet<User> Users { get; set; } = null!;
 
+<<<<<<< HEAD
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+                optionsBuilder.UseSqlServer("Server=LAPTOP-A6P8DBMT\\SQLEXPRESS;Database=CafeteriaOrderingDB;Trusted_Connection=True;MultipleActiveResultSets=true");
+            }
+        }
+
+=======
+>>>>>>> main
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<AccountActivity>(entity =>
             {
                 entity.HasKey(e => e.ActivityId)
+<<<<<<< HEAD
+                    .HasName("PK__account___482FBD63255EB588");
+=======
                     .HasName("PK__account___482FBD63F92214AA");
+>>>>>>> main
 
                 entity.ToTable("account_activity");
 
@@ -223,12 +239,21 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<MenuItem>(entity =>
             {
                 entity.HasKey(e => e.ItemId)
+<<<<<<< HEAD
+                    .HasName("PK__menu_ite__52020FDD25A390D3");
+=======
                     .HasName("PK__menu_ite__52020FDD902DC51A");
+>>>>>>> main
 
                 entity.ToTable("menu_items");
 
                 entity.Property(e => e.ItemId).HasColumnName("item_id");
 
+<<<<<<< HEAD
+                entity.Property(e => e.CountItemsSold).HasColumnName("Count_items_sold");
+
+=======
+>>>>>>> main
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("datetime")
                     .HasColumnName("created_at")
@@ -351,7 +376,11 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<RecommendedMeal>(entity =>
             {
                 entity.HasKey(e => e.RecommendId)
+<<<<<<< HEAD
+                    .HasName("PK__recommen__5D4DAA7192577175");
+=======
                     .HasName("PK__recommen__5D4DAA716AB3C18C");
+>>>>>>> main
 
                 entity.ToTable("recommended_meals");
 
@@ -386,7 +415,11 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<RevenueReport>(entity =>
             {
                 entity.HasKey(e => e.ReportId)
+<<<<<<< HEAD
+                    .HasName("PK__revenue___779B7C58B4418CC9");
+=======
                     .HasName("PK__revenue___779B7C58397A8C80");
+>>>>>>> main
 
                 entity.ToTable("revenue_reports");
 
@@ -420,7 +453,11 @@ namespace CafeteriaOrdering.API.Models
             {
                 entity.ToTable("users");
 
+<<<<<<< HEAD
+                entity.HasIndex(e => e.Email, "UQ__users__AB6E6164B21CD19C")
+=======
                 entity.HasIndex(e => e.Email, "UQ__users__AB6E6164380A30B7")
+>>>>>>> main
                     .IsUnique();
 
                 entity.Property(e => e.UserId).HasColumnName("user_id");
