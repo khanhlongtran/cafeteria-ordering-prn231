@@ -239,6 +239,8 @@ namespace CafeteriaOrdering.API.Models
 
                 entity.Property(e => e.ItemId).HasColumnName("item_id");
 
+                entity.Property(e => e.CountItemsSold).HasColumnName("Count_items_sold");
+
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("datetime")
                     .HasColumnName("created_at")
