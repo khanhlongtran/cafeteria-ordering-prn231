@@ -1,4 +1,6 @@
 using CafeteriaOrdering.API.Models;
+using CafeteriaOrdering.API.ZaloPay;
+using CafeteriaOrdering.API.ZaloPay.Services;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +23,15 @@ namespace CafeteriaOrdering.API
             builder.Services.AddDbContext<CafeteriaOrderingDBContext>(options =>
                 options.UseSqlServer(connectionString)
             );
+
+            var zaloPayConfig = builder.Configuration.GetSection("ZaloPay");
+            var appId = zaloPayConfig["AppId"];
+            var key1 = zaloPayConfig["Key1"];
+            var key2 = zaloPayConfig["Key2"];
+            var endpoint = zaloPayConfig["Endpoint"];
+
+            builder.Services.Configure<ZaloPayConfig>(zaloPayConfig);
+            builder.Services.AddHttpClient<ZaloPayService>();
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
