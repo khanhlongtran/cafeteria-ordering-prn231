@@ -1,4 +1,4 @@
-using CafeteriaOrdering.API.Models;
+﻿using CafeteriaOrdering.API.Models;
 using CafeteriaOrdering.API.ZaloPay;
 using CafeteriaOrdering.API.ZaloPay.Services;
 using DotNetEnv;
@@ -34,22 +34,27 @@ namespace CafeteriaOrdering.API
 
             builder.Services.Configure<ZaloPayConfig>(zaloPayConfig);
             builder.Services.AddHttpClient<ZaloPayService>();
-
+            builder.Services.AddScoped<IMealDeliveryService, MealDeliveryService>();
+            builder.Services.AddScoped<NotificationService>();
+            builder.Services.AddScoped<LoggingService>();
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
-            // Get service instances
-            var orderService = app.Services.GetRequiredService<IMealDeliveryService>();
-            var notificationService = app.Services.GetRequiredService<NotificationService>();
-            var loggingService = app.Services.GetRequiredService<LoggingService>();
+            // 🔥 Sử dụng scope để lấy Scoped Services
+            using (var scope = app.Services.CreateScope())
+            {
+                var scopedServices = scope.ServiceProvider;
+                var orderService = scopedServices.GetRequiredService<IMealDeliveryService>();
+                var notificationService = scopedServices.GetRequiredService<NotificationService>();
+                var loggingService = scopedServices.GetRequiredService<LoggingService>();
 
-            // Subscribe listeners to the event
-            orderService.OnOrderStatusChanged += notificationService.SendNotification;
-            orderService.OnOrderStatusChanged += loggingService.LogStatusChange;
+                // Subscribe listeners to the event
+                orderService.OnOrderStatusChanged += notificationService.SendNotification;
+                orderService.OnOrderStatusChanged += loggingService.LogStatusChange;
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
