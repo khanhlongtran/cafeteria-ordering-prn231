@@ -4,6 +4,12 @@ using CafeteriaOrdering.API.ZaloPay.Services;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using CafeteriaOrdering.API.Models;
+using CafeteriaOrdering.API.Services;
+
 namespace CafeteriaOrdering.API
 {
     public class Program
@@ -40,6 +46,15 @@ namespace CafeteriaOrdering.API
             options.UseSqlServer(builder.Configuration.GetConnectionString("DB")));
 
             var app = builder.Build();
+
+            // Get service instances
+            var orderService = app.Services.GetRequiredService<IMealDeliveryService>();
+            var notificationService = app.Services.GetRequiredService<NotificationService>();
+            var loggingService = app.Services.GetRequiredService<LoggingService>();
+
+            // Subscribe listeners to the event
+            orderService.OnOrderStatusChanged += notificationService.SendNotification;
+            orderService.OnOrderStatusChanged += loggingService.LogStatusChange;
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
