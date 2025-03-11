@@ -4,10 +4,6 @@ using CafeteriaOrdering.API.ZaloPay.Services;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
-using CafeteriaOrdering.API.Models;
 using CafeteriaOrdering.API.Services;
 
 namespace CafeteriaOrdering.API
@@ -38,12 +34,11 @@ namespace CafeteriaOrdering.API
 
             builder.Services.Configure<ZaloPayConfig>(zaloPayConfig);
             builder.Services.AddHttpClient<ZaloPayService>();
+
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            builder.Services.AddDbContext<CafeteriaOrderingDBContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DB")));
 
             var app = builder.Build();
 
