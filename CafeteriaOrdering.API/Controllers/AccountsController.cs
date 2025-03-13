@@ -1,4 +1,5 @@
-﻿using CafeteriaOrdering.API.Models;
+﻿using CafeteriaOrdering.API.DTO;
+using CafeteriaOrdering.API.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,17 +20,14 @@ namespace CafeteriaOrdering.API.Controllers
             _dbContext = dbContext;
         }
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] IDictionary<string, object> request)
+        public async Task<IActionResult> Login([FromBody] LoginRequestDTO loginDTO)
         {
             try
             {
-                string email = request["email"]?.ToString() ?? throw new ArgumentException("Email is required");
-                string password = request["password"]?.ToString() ?? throw new ArgumentException("Password is required");
-
                 // Kiểm tra trong DB của bạn
-                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == loginDTO.Email);
 
-                if (user == null || user.Password != password)
+                if (user == null || user.Password != loginDTO.Password)
                 {
                     return Unauthorized(new { Message = "Email hoặc mật khẩu không đúng" });
                 }
@@ -41,7 +39,7 @@ namespace CafeteriaOrdering.API.Controllers
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim("Role", user.Role),
+                    new Claim("Role", user.Role.ToString()),
                     new Claim("AccountId", user.UserId.ToString())
                 };
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtConfig:Key"]));
@@ -57,13 +55,13 @@ namespace CafeteriaOrdering.API.Controllers
                 var token = new JwtSecurityTokenHandler().WriteToken(preparedToken);
                 var role = user.Role;
                 var userId = user.UserId.ToString();
-                return Ok(new
+                var response = new LoginResponseDTO
                 {
-                    Message = "Đăng nhập thành công",
                     Token = token,
-                    Role = role,
-                    UserId = userId
-                });
+                    Role = user.Role,
+                    AccountId = user.UserId.ToString()
+                };
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -71,28 +69,29 @@ namespace CafeteriaOrdering.API.Controllers
             }
         }
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] IDictionary<string, object> request)
+        public async Task<IActionResult> Register([FromForm] RegisterDTO registerDTO)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                string fullName = request["fullName"]?.ToString() ?? throw new ArgumentException("FullName is required");
-                string email = request["email"]?.ToString() ?? throw new ArgumentException("Email is required");
-                string password = request["password"]?.ToString() ?? throw new ArgumentException("Password is required");
-                string? phone = request.ContainsKey("phone") ? request["phone"]?.ToString() : null;
-                string role = request["role"]?.ToString() ?? throw new ArgumentException("Role is required");
-                //check dup account
-                var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+                // Kiểm tra trùng email
+                var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == registerDTO.Email);
                 if (existingUser != null)
                 {
                     return BadRequest(new { Message = "Email đã được sử dụng. Vui lòng chọn email khác." });
                 }
+
                 var newUser = new User
                 {
-                    FullName = fullName,
-                    Email = email,
-                    Password = password,
-                    Phone = phone,
-                    Role = role,
+                    FullName = registerDTO.FullName,
+                    Email = registerDTO.Email,
+                    Password = registerDTO.Password,
+                    Phone = registerDTO.Phone,
+                    Role = registerDTO.Role,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     DefaultCuisine = ""
