@@ -222,7 +222,8 @@ namespace ManagerAPI.Controllers
             _context.MenuItems.Remove(menuItem);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new { message = "Menu item deleted successfully" });
         }
+
     }
 }
