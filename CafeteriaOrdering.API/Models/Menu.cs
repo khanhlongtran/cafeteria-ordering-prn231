@@ -16,6 +16,7 @@ namespace CafeteriaOrdering.API.Models
         public string? Description { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public bool? IsStatus { get; set; }
 
         public virtual User Manager { get; set; } = null!;
         public virtual ICollection<MenuItem> MenuItems { get; set; }

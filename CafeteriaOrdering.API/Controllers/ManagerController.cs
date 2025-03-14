@@ -21,13 +21,17 @@ namespace ManagerAPI.Controllers
         }
 
         // ----------------------- MENU -----------------------
-
         [HttpGet("ViewMenu")]
         public async Task<IActionResult> ViewMenu()
         {
-            var menus = await _context.Menus.AsNoTracking().ToListAsync();
+            var menus = await _context.Menus
+                .AsNoTracking()
+                .Where(m => m.IsStatus == true) // Lọc chỉ lấy những menu có IsStatus = true
+                .ToListAsync();
+
             return Ok(menus);
         }
+
 
         //[HttpPost("CreateMenu")]
         //public async Task<IActionResult> CreateMenu([FromForm] Menu menu)
@@ -52,7 +56,8 @@ namespace ManagerAPI.Controllers
                 MenuName = menu_name,
                 Description = description,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                IsStatus = true // Mặc định giá trị IsStatus = true
             };
 
             _context.Menus.Add(menu);
@@ -60,6 +65,7 @@ namespace ManagerAPI.Controllers
 
             return CreatedAtAction(nameof(ViewMenu), new { id = menu.MenuId }, menu);
         }
+
 
 
         //[HttpPut("UpdateMenu/{id}")]
@@ -110,35 +116,48 @@ namespace ManagerAPI.Controllers
             if (menu == null)
                 return NotFound(new { message = "Menu not found" });
 
-            if (await _context.MenuItems.AnyAsync(m => m.MenuId == id))
-                return Conflict(new { message = "Cannot delete menu because it contains menu items" });
-
-            _context.Menus.Remove(menu);
+            // Cập nhật IsStatus thành 0 (false) thay vì xóa
+            menu.IsStatus = false;
+            menu.UpdatedAt = DateTime.UtcNow; // Cập nhật thời gian sửa đổi
             await _context.SaveChangesAsync();
-            return NoContent();
+            return Ok(new { message = "Menu has been deactivated" });
         }
+
+
 
         // ----------------------- MENU ITEMS -----------------------
 
         [HttpGet("ViewMenuItems/{menuId}")]
         public async Task<IActionResult> GetMenuItems(int menuId)
         {
-            var menuItems = await _context.MenuItems.Where(m => m.MenuId == menuId).AsNoTracking().ToListAsync();
+            var menuItems = await _context.MenuItems
+                .Where(m => m.MenuId == menuId && m.IsStatus == true)
+                .AsNoTracking()
+                .ToListAsync();
+
             return Ok(menuItems);
         }
 
         [HttpGet("ViewMenuItem/{id}")]
         public async Task<IActionResult> GetMenuItem(int id)
         {
-            var menuItem = await _context.MenuItems.AsNoTracking().FirstOrDefaultAsync(m => m.ItemId == id);
+            var menuItem = await _context.MenuItems
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.ItemId == id && m.IsStatus == true);
+
             if (menuItem == null)
-                return NotFound(new { message = "Menu item not found" });
+                return NotFound(new { message = "Menu item not found or inactive" });
 
             return Ok(menuItem);
         }
 
         [HttpPost("CreateMenuItems")]
-        public ActionResult<MenuItem> CreateMenuItem([FromForm] int menuId, [FromForm] string itemName, [FromForm] string? description, [FromForm] decimal price, [FromForm] string? itemType)
+        public ActionResult<MenuItem> CreateMenuItem(
+            [FromForm] int menuId,
+            [FromForm] string itemName,
+            [FromForm] string? description,
+            [FromForm] decimal price,
+            [FromForm] string? itemType)
         {
             var menuItem = new MenuItem
             {
@@ -148,7 +167,8 @@ namespace ManagerAPI.Controllers
                 Price = price,
                 ItemType = itemType,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                IsStatus = true // Set mặc định IsStatus = true
             };
 
             _context.MenuItems.Add(menuItem);
@@ -156,6 +176,7 @@ namespace ManagerAPI.Controllers
 
             return CreatedAtAction(nameof(GetMenuItem), new { id = menuItem.ItemId }, menuItem);
         }
+
 
         [HttpPut("UpdateMenuItems/{id}")]
         public IActionResult UpdateMenuItem(int id, [FromForm] int menuId, [FromForm] string itemName,
@@ -210,8 +231,6 @@ namespace ManagerAPI.Controllers
         //    _context.SaveChanges();
         //    return NoContent();
         //}
-
-
         [HttpDelete("DeleteMenuItem/{id}")]
         public async Task<IActionResult> DeleteMenuItem(int id)
         {
@@ -219,11 +238,14 @@ namespace ManagerAPI.Controllers
             if (menuItem == null)
                 return NotFound(new { message = "Menu item not found" });
 
-            _context.MenuItems.Remove(menuItem);
+            menuItem.IsStatus = false; // Đánh dấu là không hoạt động thay vì xóa
+            menuItem.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Menu item deleted successfully" });
+            return Ok(new { message = "Menu item deactivated successfully" });
         }
+
 
     }
 }
