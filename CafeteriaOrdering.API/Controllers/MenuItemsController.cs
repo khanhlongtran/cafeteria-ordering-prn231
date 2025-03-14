@@ -4,9 +4,11 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CafeteriaOrdering.API.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ManagerAPI.Controllers
 {
+    [Authorize("MANAGER")]
     [Route("api/Manager/[controller]")]
     [ApiController]
     public class MenuItemsController : ControllerBase

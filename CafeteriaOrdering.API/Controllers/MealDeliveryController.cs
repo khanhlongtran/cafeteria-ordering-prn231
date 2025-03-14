@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using CafeteriaOrdering.API.Models;
 using CafeteriaOrdering.API.Constants;
 using CafeteriaOrdering.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CafeteriaOrdering.API.Controllers
 {
+    [Authorize("DELIVER")]
     [Route("api/v1/delivery")]
     [ApiController]
     public class MealDeliveryController : ControllerBase

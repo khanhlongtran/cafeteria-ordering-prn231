@@ -5,6 +5,9 @@ using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 
 using CafeteriaOrdering.API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace CafeteriaOrdering.API
 {
@@ -25,6 +28,27 @@ namespace CafeteriaOrdering.API
             builder.Services.AddDbContext<CafeteriaOrderingDBContext>(options =>
                 options.UseSqlServer(connectionString)
             );
+
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidIssuer = builder.Configuration["JwtConfig:Issuer"],
+                        ValidAudience = builder.Configuration["JwtConfig:Audience"],
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtConfig:Key"]!)),
+                        ValidateAudience = true,
+                        ValidateIssuer = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true
+                    };
+                });
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("MANAGER", policy => policy.RequireClaim("Role", "MANAGER"));
+                options.AddPolicy("DELIVER  ", policy => policy.RequireClaim("Role", "DELIVER"));
+                options.AddPolicy("PATRON", policy => policy.RequireClaim("Role", "PATRON"));
+            });
 
             var zaloPayConfig = builder.Configuration.GetSection("ZaloPay");
             var appId = zaloPayConfig["AppId"];
@@ -63,6 +87,7 @@ namespace CafeteriaOrdering.API
                 app.UseSwaggerUI();
             }
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
 

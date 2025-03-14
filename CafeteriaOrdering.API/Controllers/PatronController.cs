@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CafeteriaOrdering.API.Controllers
 {
+    [Authorize("PATRON")]
     [Route("api/[controller]")]
     [ApiController]
     public class PatronController : ControllerBase
@@ -117,20 +119,20 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(new { Message = "Cập nhật địa chỉ thành công.", AddressId = address.AddressId });
         }
 
-        [HttpDelete("MyAccount/DeleteAddress/{addressId}")]
-        public async Task<IActionResult> DeleteAddress(int addressId)
-        {
-            var address = await _dbContext.Addresses.FindAsync(addressId);
-            if (address == null)
-            {
-                return NotFound("Địa chỉ không tồn tại.");
-            }
+        //[HttpDelete("MyAccount/DeleteAddress/{addressId}")]
+        //public async Task<IActionResult> DeleteAddress(int addressId)
+        //{
+        //    var address = await _dbContext.Addresses.FindAsync(addressId);
+        //    if (address == null)
+        //    {
+        //        return NotFound("Địa chỉ không tồn tại.");
+        //    }
 
-            _dbContext.Addresses.Remove(address);
-            await _dbContext.SaveChangesAsync();
+        //    _dbContext.Addresses.Remove(address);
+        //    await _dbContext.SaveChangesAsync();
 
-            return Ok(new { Message = "Xóa địa chỉ thành công.", AddressId = addressId });
-        }
+        //    return Ok(new { Message = "Xóa địa chỉ thành công.", AddressId = addressId });
+        //}
 
         [HttpGet("MyOrder/{userId}")]
         public async Task<IActionResult> GetMyOrders(int userId)

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CafeteriaOrdering.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ManagerAPI.Controllers
 {
+    [Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]  // Thiếu [ApiController], thêm vào để tránh lỗi Model Binding
     public class RevenueController : ControllerBase
