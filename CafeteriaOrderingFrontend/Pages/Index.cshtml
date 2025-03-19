@@ -1,10 +1,163 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="hero-section text-center py-5 bg-primary text-white">
+    <div class="container">
+        <h1 class="display-4">Welcome to Store Manager Portal</h1>
+        <p class="lead">Manage your food store efficiently with our comprehensive tools</p>
+    </div>
 </div>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-utensils fa-3x mb-3" style="color: var(--primary-color)"></i>
+                    <h3 class="card-title">Menu Management</h3>
+                    <p class="card-text">Create and manage your menus and menu items. Keep your offerings fresh and exciting.</p>
+                    <a asp-page="/Menu" class="btn btn-primary">
+                        <i class="fas fa-arrow-right me-2"></i>Manage Menu
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-clipboard-list fa-3x mb-3 text-success"></i>
+                    <h3 class="card-title">Order Management</h3>
+                    <p class="card-text">View and manage customer orders. Process orders and arrange deliveries efficiently.</p>
+                    <a asp-page="/Orders" class="btn btn-success">View Orders</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-3x mb-3 text-info"></i>
+                    <h3 class="card-title">Revenue Reports</h3>
+                    <p class="card-text">Generate and analyze revenue reports to track your business performance.</p>
+                    <a asp-page="/Revenue" class="btn btn-info">View Reports</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Recent Orders</h4>
+                    <div id="recentOrders">
+                        Loading recent orders...
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Today's Stats</h4>
+                    <div id="todayStats">
+                        Loading today's statistics...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            padding: 100px 0;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            border: none;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: 25px;
+            padding: 10px 25px;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Load recent orders
+        async function loadRecentOrders() {
+            try {
+                const response = await fetch('https://localhost:7001/api/Manager/RecentOrders');
+                const orders = await response.json();
+                const ordersHtml = orders.map(order => `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Order #${order.orderId}</span>
+                        <span class="badge bg-${getStatusColor(order.status)}">${order.status}</span>
+                    </div>
+                `).join('');
+                document.getElementById('recentOrders').innerHTML = ordersHtml;
+            } catch (error) {
+                document.getElementById('recentOrders').innerHTML = 'Failed to load recent orders';
+            }
+        }
+
+        // Load today's statistics
+        async function loadTodayStats() {
+            try {
+                const response = await fetch('https://localhost:7001/api/Manager/TodayStats');
+                const stats = await response.json();
+                document.getElementById('todayStats').innerHTML = `
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <h5>Orders</h5>
+                            <p class="h3">${stats.orderCount}</p>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h5>Revenue</h5>
+                            <p class="h3">$${stats.revenue.toFixed(2)}</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('todayStats').innerHTML = 'Failed to load statistics';
+            }
+        }
+
+        function getStatusColor(status) {
+            switch (status.toLowerCase()) {
+                case 'pending': return 'warning';
+                case 'processing': return 'info';
+                case 'completed': return 'success';
+                default: return 'secondary';
+            }
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRecentOrders();
+            loadTodayStats();
+        });
+    </script>
+}

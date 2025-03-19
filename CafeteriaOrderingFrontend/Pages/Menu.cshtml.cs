@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Text.Json;
-using CafeteriaOrdering.API.Models;
-using CafeteriaOrdering.API.DTO;
+using CafeteriaOrderingFrontend.Models;
 
 namespace CafeteriaOrderingFrontend.Pages
 {
@@ -13,9 +14,12 @@ namespace CafeteriaOrderingFrontend.Pages
         private readonly HttpClient _httpClient;
         private readonly string _apiBaseUrl = "https://localhost:7001/api";
 
+        [BindProperty]
         public List<Menu> Menus { get; set; }
-        public MenuDto NewMenu { get; set; }
-        public MenuDto EditingMenu { get; set; }
+        [BindProperty]
+        public Menu NewMenu { get; set; }
+        [BindProperty]
+        public Menu EditingMenu { get; set; }
         public string Message { get; set; }
         public bool IsSuccess { get; set; }
 
@@ -23,8 +27,8 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             _httpClient = httpClient;
             Menus = new List<Menu>();
-            NewMenu = new MenuDto();
-            EditingMenu = new MenuDto();
+            NewMenu = new Menu();
+            EditingMenu = new Menu();
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -35,7 +39,19 @@ namespace CafeteriaOrderingFrontend.Pages
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    Menus = JsonSerializer.Deserialize<List<Menu>>(content);
+                    Menus = JsonSerializer.Deserialize<List<Menu>>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    // Handle null IsStatus values
+                    if (Menus != null)
+                    {
+                        foreach (var menu in Menus)
+                        {
+                            menu.IsStatus = menu.IsStatus ?? false;
+                        }
+                    }
                 }
                 else
                 {
@@ -56,20 +72,19 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
-                // Create form data
                 var formData = new MultipartFormDataContent();
                 formData.Add(new StringContent(NewMenu.ManagerId.ToString()), "ManagerId");
                 formData.Add(new StringContent(NewMenu.MenuName), "MenuName");
                 formData.Add(new StringContent(NewMenu.Description ?? ""), "Description");
-                formData.Add(new StringContent(NewMenu.IsStatus.ToString()), "IsStatus");
+                formData.Add(new StringContent((NewMenu.IsStatus ?? true).ToString()), "IsStatus");
 
                 var response = await _httpClient.PostAsync($"{_apiBaseUrl}/Manager/CreateMenu", formData);
                 if (response.IsSuccessStatusCode)
                 {
                     Message = "Menu created successfully";
                     IsSuccess = true;
-                    NewMenu = new MenuDto();
-                    await OnGetAsync(); // Refresh the menu list
+                    NewMenu = new Menu();
+                    await OnGetAsync();
                 }
                 else
                 {
@@ -91,20 +106,19 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
-                // Create form data
                 var formData = new MultipartFormDataContent();
-                formData.Add(new StringContent(EditingMenu.ManagerId.ToString()), "ManagerId");
-                formData.Add(new StringContent(EditingMenu.MenuName), "MenuName");
-                formData.Add(new StringContent(EditingMenu.Description ?? ""), "Description");
-                formData.Add(new StringContent(EditingMenu.IsStatus.ToString()), "IsStatus");
+                formData.Add(new StringContent(EditingMenu.ManagerId.ToString()), "manager_id");
+                formData.Add(new StringContent(EditingMenu.MenuName), "menu_name");
+                formData.Add(new StringContent(EditingMenu.Description ?? ""), "description");
+                formData.Add(new StringContent(EditingMenu.IsStatus.ToString()), "is_status");
 
                 var response = await _httpClient.PutAsync($"{_apiBaseUrl}/Manager/UpdateMenu/{EditingMenu.MenuId}", formData);
                 if (response.IsSuccessStatusCode)
                 {
                     Message = "Menu updated successfully";
                     IsSuccess = true;
-                    EditingMenu = new MenuDto();
-                    await OnGetAsync(); // Refresh the menu list
+                    EditingMenu = new Menu();
+                    await OnGetAsync();
                 }
                 else
                 {
@@ -131,7 +145,7 @@ namespace CafeteriaOrderingFrontend.Pages
                 {
                     Message = "Menu deleted successfully";
                     IsSuccess = true;
-                    await OnGetAsync(); // Refresh the menu list
+                    await OnGetAsync();
                 }
                 else
                 {
@@ -160,14 +174,7 @@ namespace CafeteriaOrderingFrontend.Pages
                     var menu = JsonSerializer.Deserialize<Menu>(content);
                     
                     // Map Menu to MenuDto
-                    EditingMenu = new MenuDto
-                    {
-                        MenuId = menu.MenuId,
-                        ManagerId = menu.ManagerId,
-                        MenuName = menu.MenuName,
-                        Description = menu.Description,
-                        IsStatus = menu.IsStatus
-                    };
+                    EditingMenu = menu;
                 }
             }
             catch (Exception ex)
