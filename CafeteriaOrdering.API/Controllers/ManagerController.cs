@@ -194,7 +194,7 @@ namespace ManagerAPI.Controllers
 
 
         [HttpPost("CreateMenuItems")]
-        public async Task<IActionResult> CreateMenuItem([FromForm] MenuItemDTO menuItemDto)
+        public async Task<IActionResult> CreateMenuItem([FromForm] MenuItemDto menuItemDto)
         {
             if (!ModelState.IsValid)
             {
@@ -222,7 +222,7 @@ namespace ManagerAPI.Controllers
         }
 
         [HttpPut("UpdateMenuItems/{id}")]
-        public async Task<IActionResult> UpdateMenuItem(int id, [FromForm] MenuItemDTO menuItemDto, [FromForm] IFormFile? imageFile)
+        public async Task<IActionResult> UpdateMenuItem(int id, [FromForm] MenuItemDto menuItemDto, [FromForm] IFormFile? imageFile)
         {
             if (!ModelState.IsValid)
             {
