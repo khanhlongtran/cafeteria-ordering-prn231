@@ -35,7 +35,7 @@ namespace CafeteriaOrdering.API.Models
 //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
 //                optionsBuilder.UseSqlServer("server=LAPTOP-A6P8DBMT\\SQLEXPRESS;database=CafeteriaOrderingDB;uid=sa;pwd=123456;TrustServerCertificate=True;");
 //            }
-//        }
+        //}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -87,6 +87,11 @@ namespace CafeteriaOrdering.API.Models
                     .HasColumnType("datetime")
                     .HasColumnName("created_at")
                     .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.GeoLocation)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .HasColumnName("geoLocation");
 
                 entity.Property(e => e.IsDefault).HasColumnName("is_default");
 

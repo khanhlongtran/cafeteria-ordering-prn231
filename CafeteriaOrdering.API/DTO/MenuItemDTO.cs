@@ -1,8 +1,8 @@
 ﻿namespace CafeteriaOrdering.API.DTO
 {
-    public class MenuItemDTO
+    public class MenuItemDto
     {
-        //public int ItemId { get; set; }
+        public int ItemId { get; set; }
         public int MenuId { get; set; }
         public string ItemName { get; set; }
         public string Description { get; set; }
