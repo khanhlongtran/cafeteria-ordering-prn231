@@ -4,44 +4,80 @@
     ViewData["Title"] = "Home";
 }
 
-<div class="hero-section text-center py-5 bg-primary text-white">
-    <div class="container">
-        <h1 class="display-4">Welcome to Store Manager Portal</h1>
-        <p class="lead">Manage your food store efficiently with our comprehensive tools</p>
+<div class="hero-section text-center py-5 text-white">
+    <div class="hero-overlay"></div>
+    <div class="container position-relative">
+        <h1 class="display-4 fw-bold mb-4">Welcome to Food Manager Portal</h1>
+        <p class="lead mb-4">Delight your customers with delicious meals and efficient service</p>
+        <div class="hero-stats">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="hero-stat-item">
+                        <i class="fas fa-utensils fa-2x mb-2"></i>
+                        <h3>100+</h3>
+                        <p>Menu Items</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="hero-stat-item">
+                        <i class="fas fa-users fa-2x mb-2"></i>
+                        <h3>500+</h3>
+                        <p>Happy Customers</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="hero-stat-item">
+                        <i class="fas fa-star fa-2x mb-2"></i>
+                        <h3>4.8/5</h3>
+                        <p>Customer Rating</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card h-100 menu-card">
                 <div class="card-body text-center">
-                    <i class="fas fa-utensils fa-3x mb-3" style="color: var(--primary-color)"></i>
+                    <div class="icon-wrapper mb-4">
+                        <i class="fas fa-utensils"></i>
+                    </div>
                     <h3 class="card-title">Menu Management</h3>
                     <p class="card-text">Create and manage your menus and menu items. Keep your offerings fresh and exciting.</p>
-                    <a asp-page="/Menu" class="btn btn-primary">
+                    <a asp-page="/Menu" class="btn btn-primary btn-lg">
                         <i class="fas fa-arrow-right me-2"></i>Manage Menu
                     </a>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card h-100 order-card">
                 <div class="card-body text-center">
-                    <i class="fas fa-clipboard-list fa-3x mb-3 text-success"></i>
+                    <div class="icon-wrapper mb-4">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
                     <h3 class="card-title">Order Management</h3>
                     <p class="card-text">View and manage customer orders. Process orders and arrange deliveries efficiently.</p>
-                    <a asp-page="/Orders" class="btn btn-success">View Orders</a>
+                    <a asp-page="/Order" class="btn btn-success btn-lg">
+                        <i class="fas fa-arrow-right me-2"></i>View Orders
+                    </a>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card h-100 revenue-card">
                 <div class="card-body text-center">
-                    <i class="fas fa-chart-line fa-3x mb-3 text-info"></i>
+                    <div class="icon-wrapper mb-4">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
                     <h3 class="card-title">Revenue Reports</h3>
                     <p class="card-text">Generate and analyze revenue reports to track your business performance.</p>
-                    <a asp-page="/Revenue" class="btn btn-info">View Reports</a>
+                    <a asp-page="/Revenue" class="btn btn-info btn-lg">
+                        <i class="fas fa-arrow-right me-2"></i>View Reports
+                    </a>
                 </div>
             </div>
         </div>
@@ -49,21 +85,121 @@
 
     <div class="row mt-5">
         <div class="col-md-6">
-            <div class="card">
+            <div class="card recent-orders-card">
                 <div class="card-body">
-                    <h4 class="card-title">Recent Orders</h4>
-                    <div id="recentOrders">
-                        Loading recent orders...
+                    <h4 class="card-title d-flex justify-content-between align-items-center">
+                        Recent Orders
+                        <span class="badge bg-primary rounded-pill">5 New</span>
+                    </h4>
+                    <div class="recent-orders">
+                        <div class="order-item d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="order-icon me-3">
+                                    <i class="fas fa-hamburger"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Order #1234</h6>
+                                    <small class="text-muted">2 items • $25.50</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-warning rounded-pill">Pending</span>
+                        </div>
+                        <div class="order-item d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="order-icon me-3">
+                                    <i class="fas fa-pizza-slice"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Order #1233</h6>
+                                    <small class="text-muted">3 items • $35.75</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-info rounded-pill">Processing</span>
+                        </div>
+                        <div class="order-item d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="order-icon me-3">
+                                    <i class="fas fa-drumstick-bite"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Order #1232</h6>
+                                    <small class="text-muted">1 item • $15.25</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-success rounded-pill">Completed</span>
+                        </div>
+                        <div class="order-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="order-icon me-3">
+                                    <i class="fas fa-ice-cream"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Order #1231</h6>
+                                    <small class="text-muted">4 items • $45.00</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-success rounded-pill">Completed</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card">
+            <div class="card stats-card">
                 <div class="card-body">
-                    <h4 class="card-title">Today's Stats</h4>
-                    <div id="todayStats">
-                        Loading today's statistics...
+                    <h4 class="card-title d-flex justify-content-between align-items-center">
+                        Today's Stats
+                        <span class="badge bg-success rounded-pill">+12%</span>
+                    </h4>
+                    <div class="stats-container">
+                        <div class="row">
+                            <div class="col-6 mb-4">
+                                <div class="stat-card">
+                                    <div class="stat-icon bg-primary">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>24</h3>
+                                        <p class="text-muted mb-0">Total Orders</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-4">
+                                <div class="stat-card">
+                                    <div class="stat-icon bg-success">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>$856</h3>
+                                        <p class="text-muted mb-0">Revenue</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="stat-icon bg-warning">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>8</h3>
+                                        <p class="text-muted mb-0">Pending</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="stat-icon bg-info">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>16</h3>
+                                        <p class="text-muted mb-0">Completed</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -73,33 +209,219 @@
 
 @section Styles {
     <style>
+        :root {
+            --primary-color: #FF6B6B;
+            --secondary-color: #4ECDC4;
+            --accent-color: #FFE66D;
+            --dark-color: #2C3E50;
+            --light-color: #F7F7F7;
+        }
+
         .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            padding: 100px 0;
-            margin-bottom: 40px;
+            background-image: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(44, 62, 80, 0.9) 0%, rgba(255, 107, 107, 0.8) 100%);
+        }
+
+        .hero-stats {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .hero-stat-item {
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .hero-stat-item:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .hero-stat-item h3 {
+            font-size: 1.8rem;
+            margin: 5px 0;
+        }
+
+        .hero-stat-item p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .hero-stat-item i {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .container {
+            margin-top: 20px;
         }
 
         .card {
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border-radius: 15px;
             border: none;
+            overflow: hidden;
+            height: 100%;
         }
 
         .card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+            background: var(--light-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .menu-card:hover .icon-wrapper {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .order-card:hover .icon-wrapper {
+            background: var(--success);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .revenue-card:hover .icon-wrapper {
+            background: var(--info);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .btn {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
         .btn-primary {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
-            border-radius: 25px;
-            padding: 10px 25px;
         }
 
         .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
+            background-color: #ff5252;
+            border-color: #ff5252;
+            transform: translateY(-2px);
+        }
+
+        .btn-success:hover, .btn-info:hover {
+            transform: translateY(-2px);
+        }
+
+        .order-item {
+            padding: 15px;
+            border-radius: 10px;
+            background-color: var(--light-color);
+            transition: all 0.3s ease;
+        }
+
+        .order-item:hover {
+            background-color: #f0f0f0;
+            transform: translateX(5px);
+        }
+
+        .order-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: var(--light-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stat-content h3 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+
+        .badge {
+            padding: 0.6em 1em;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .recent-orders-card, .stats-card {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        @@media (max-width: 768px) {
+            .hero-section {
+                padding: 100px 0;
+            }
+            
+            .hero-stats {
+                padding: 20px;
+            }
+            
+            .hero-stat-item {
+                margin-bottom: 20px;
+            }
         }
     </style>
 }
@@ -108,27 +430,39 @@
     <script>
         // Load recent orders
         async function loadRecentOrders() {
+            const recentOrdersElement = document.getElementById('recentOrders');
             try {
-                const response = await fetch('https://localhost:7001/api/Manager/RecentOrders');
+                const response = await fetch('/api/Manager/RecentOrders');
+                if (!response.ok) throw new Error('Failed to fetch recent orders');
+                
                 const orders = await response.json();
+                if (!orders.length) {
+                    recentOrdersElement.innerHTML = '<p class="text-muted">No recent orders</p>';
+                    return;
+                }
+
                 const ordersHtml = orders.map(order => `
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span>Order #${order.orderId}</span>
                         <span class="badge bg-${getStatusColor(order.status)}">${order.status}</span>
                     </div>
                 `).join('');
-                document.getElementById('recentOrders').innerHTML = ordersHtml;
+                recentOrdersElement.innerHTML = ordersHtml;
             } catch (error) {
-                document.getElementById('recentOrders').innerHTML = 'Failed to load recent orders';
+                recentOrdersElement.innerHTML = '<div class="alert alert-danger">Failed to load recent orders</div>';
+                console.error('Error loading recent orders:', error);
             }
         }
 
         // Load today's statistics
         async function loadTodayStats() {
+            const todayStatsElement = document.getElementById('todayStats');
             try {
-                const response = await fetch('https://localhost:7001/api/Manager/TodayStats');
+                const response = await fetch('/api/Manager/TodayStats');
+                if (!response.ok) throw new Error('Failed to fetch today\'s stats');
+                
                 const stats = await response.json();
-                document.getElementById('todayStats').innerHTML = `
+                todayStatsElement.innerHTML = `
                     <div class="row">
                         <div class="col-6 mb-3">
                             <h5>Orders</h5>
@@ -141,7 +475,8 @@
                     </div>
                 `;
             } catch (error) {
-                document.getElementById('todayStats').innerHTML = 'Failed to load statistics';
+                todayStatsElement.innerHTML = '<div class="alert alert-danger">Failed to load statistics</div>';
+                console.error('Error loading today\'s stats:', error);
             }
         }
 
