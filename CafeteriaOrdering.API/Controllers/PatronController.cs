@@ -317,7 +317,7 @@ namespace CafeteriaOrdering.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Manager")]
+        [Authorize(Roles = "MANAGER")]
         [HttpPut("{addressId}/geo-location")]
         public async Task<IActionResult> UpdateGeoLocation(int addressId, [FromBody] UpdateGeoLocationRequest request)
         {
