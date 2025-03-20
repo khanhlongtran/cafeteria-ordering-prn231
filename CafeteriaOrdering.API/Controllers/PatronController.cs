@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using CafeteriaOrdering.API.DTO;
 using Microsoft.AspNetCore.Authorization;
 
 namespace CafeteriaOrdering.API.Controllers
@@ -300,6 +301,7 @@ namespace CafeteriaOrdering.API.Controllers
                     OrderDate = DateTime.UtcNow,
                     Status = "PENDING",
                     TotalAmount = totalAmount,
+
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     OrderItems = orderItemsToAdd
@@ -315,5 +317,25 @@ namespace CafeteriaOrdering.API.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+        [Authorize(Roles = "Manager")]
+        [HttpPut("{addressId}/geo-location")]
+        public async Task<IActionResult> UpdateGeoLocation(int addressId, [FromBody] UpdateGeoLocationRequest request)
+        {
+            var address = await _dbContext.Addresses.FindAsync(addressId);
+            if (address == null)
+            {
+                return NotFound(new { message = "Address not found" });
+            }
+
+            address.GeoLocation = request.GeoLocation;
+            address.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(new { message = "GeoLocation updated successfully" });
+        }
+
+
+
     }
 }

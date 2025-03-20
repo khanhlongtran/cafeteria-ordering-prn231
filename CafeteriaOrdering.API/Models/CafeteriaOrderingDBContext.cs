@@ -28,13 +28,21 @@ namespace CafeteriaOrdering.API.Models
         public virtual DbSet<RevenueReport> RevenueReports { get; set; } = null!;
         public virtual DbSet<User> Users { get; set; } = null!;
 
+//        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+//        {
+//            if (!optionsBuilder.IsConfigured)
+//            {
+//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+//                optionsBuilder.UseSqlServer("server=LAPTOP-A6P8DBMT\\SQLEXPRESS;database=CafeteriaOrderingDB;uid=sa;pwd=123456;TrustServerCertificate=True;");
+//            }
+        //}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<AccountActivity>(entity =>
             {
                 entity.HasKey(e => e.ActivityId)
-                    .HasName("PK__account___482FBD63FBD60F96");
+                    .HasName("PK__account___482FBD63255EB588");
 
                 entity.ToTable("account_activity");
 
@@ -79,6 +87,11 @@ namespace CafeteriaOrdering.API.Models
                     .HasColumnType("datetime")
                     .HasColumnName("created_at")
                     .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.GeoLocation)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .HasColumnName("geoLocation");
 
                 entity.Property(e => e.IsDefault).HasColumnName("is_default");
 
@@ -202,6 +215,11 @@ namespace CafeteriaOrdering.API.Models
                     .IsUnicode(false)
                     .HasColumnName("description");
 
+                entity.Property(e => e.IsStatus)
+                    .IsRequired()
+                    .HasColumnName("isStatus")
+                    .HasDefaultValueSql("((1))");
+
                 entity.Property(e => e.ManagerId).HasColumnName("manager_id");
 
                 entity.Property(e => e.MenuName)
@@ -224,7 +242,7 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<MenuItem>(entity =>
             {
                 entity.HasKey(e => e.ItemId)
-                    .HasName("PK__menu_ite__52020FDDC60ED578");
+                    .HasName("PK__menu_ite__52020FDD25A390D3");
 
                 entity.ToTable("menu_items");
 
@@ -241,6 +259,11 @@ namespace CafeteriaOrdering.API.Models
                     .HasMaxLength(255)
                     .IsUnicode(false)
                     .HasColumnName("description");
+
+                entity.Property(e => e.IsStatus)
+                    .IsRequired()
+                    .HasColumnName("isStatus")
+                    .HasDefaultValueSql("((1))");
 
                 entity.Property(e => e.ItemName)
                     .HasMaxLength(100)
@@ -354,7 +377,7 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<RecommendedMeal>(entity =>
             {
                 entity.HasKey(e => e.RecommendId)
-                    .HasName("PK__recommen__5D4DAA71166FE29F");
+                    .HasName("PK__recommen__5D4DAA7192577175");
 
                 entity.ToTable("recommended_meals");
 
@@ -389,7 +412,7 @@ namespace CafeteriaOrdering.API.Models
             modelBuilder.Entity<RevenueReport>(entity =>
             {
                 entity.HasKey(e => e.ReportId)
-                    .HasName("PK__revenue___779B7C5868D245D7");
+                    .HasName("PK__revenue___779B7C58B4418CC9");
 
                 entity.ToTable("revenue_reports");
 
@@ -423,7 +446,7 @@ namespace CafeteriaOrdering.API.Models
             {
                 entity.ToTable("users");
 
-                entity.HasIndex(e => e.Email, "UQ__users__AB6E6164DBD07D8D")
+                entity.HasIndex(e => e.Email, "UQ__users__AB6E6164B21CD19C")
                     .IsUnique();
 
                 entity.Property(e => e.UserId).HasColumnName("user_id");
