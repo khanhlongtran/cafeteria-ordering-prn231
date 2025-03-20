@@ -68,6 +68,8 @@ namespace CafeteriaOrdering.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] RegisterDTO registerDTO)
         {
