@@ -13,7 +13,7 @@ namespace CafeteriaOrdering.API.Models
 
         public int ItemId { get; set; }
         public int MenuId { get; set; }
-        public string ItemName { get; set; } = null!;
+        public string? ItemName { get; set; }
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public string? ItemType { get; set; }

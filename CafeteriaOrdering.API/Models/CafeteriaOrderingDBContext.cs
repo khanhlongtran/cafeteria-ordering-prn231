@@ -35,7 +35,7 @@ namespace CafeteriaOrdering.API.Models
 //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
 //                optionsBuilder.UseSqlServer("server=LAPTOP-A6P8DBMT\\SQLEXPRESS;database=CafeteriaOrderingDB;uid=sa;pwd=123456;TrustServerCertificate=True;");
 //            }
-        //}
+//        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -75,12 +75,10 @@ namespace CafeteriaOrdering.API.Models
 
                 entity.Property(e => e.AddressLine)
                     .HasMaxLength(255)
-                    .IsUnicode(false)
                     .HasColumnName("address_line");
 
                 entity.Property(e => e.City)
                     .HasMaxLength(100)
-                    .IsUnicode(false)
                     .HasColumnName("city");
 
                 entity.Property(e => e.CreatedAt)
@@ -93,11 +91,12 @@ namespace CafeteriaOrdering.API.Models
                     .IsUnicode(false)
                     .HasColumnName("geoLocation");
 
+                entity.Property(e => e.Image).HasColumnName("image");
+
                 entity.Property(e => e.IsDefault).HasColumnName("is_default");
 
                 entity.Property(e => e.State)
                     .HasMaxLength(100)
-                    .IsUnicode(false)
                     .HasColumnName("state");
 
                 entity.Property(e => e.UpdatedAt)
@@ -210,10 +209,7 @@ namespace CafeteriaOrdering.API.Models
                     .HasColumnName("created_at")
                     .HasDefaultValueSql("(getdate())");
 
-                entity.Property(e => e.Description)
-                    .HasMaxLength(255)
-                    .IsUnicode(false)
-                    .HasColumnName("description");
+                entity.Property(e => e.Description).HasColumnName("description");
 
                 entity.Property(e => e.IsStatus)
                     .IsRequired()
@@ -223,8 +219,7 @@ namespace CafeteriaOrdering.API.Models
                 entity.Property(e => e.ManagerId).HasColumnName("manager_id");
 
                 entity.Property(e => e.MenuName)
-                    .HasMaxLength(100)
-                    .IsUnicode(false)
+                    .HasMaxLength(255)
                     .HasColumnName("menu_name");
 
                 entity.Property(e => e.UpdatedAt)
@@ -256,8 +251,7 @@ namespace CafeteriaOrdering.API.Models
                     .HasDefaultValueSql("(getdate())");
 
                 entity.Property(e => e.Description)
-                    .HasMaxLength(255)
-                    .IsUnicode(false)
+                    .HasMaxLength(500)
                     .HasColumnName("description");
 
                 entity.Property(e => e.IsStatus)
@@ -266,8 +260,7 @@ namespace CafeteriaOrdering.API.Models
                     .HasDefaultValueSql("((1))");
 
                 entity.Property(e => e.ItemName)
-                    .HasMaxLength(100)
-                    .IsUnicode(false)
+                    .HasMaxLength(255)
                     .HasColumnName("item_name");
 
                 entity.Property(e => e.ItemType)
@@ -457,8 +450,7 @@ namespace CafeteriaOrdering.API.Models
                     .HasDefaultValueSql("(getdate())");
 
                 entity.Property(e => e.DefaultCuisine)
-                    .HasMaxLength(50)
-                    .IsUnicode(false)
+                    .HasMaxLength(255)
                     .HasColumnName("default_cuisine");
 
                 entity.Property(e => e.Email)
@@ -467,8 +459,7 @@ namespace CafeteriaOrdering.API.Models
                     .HasColumnName("email");
 
                 entity.Property(e => e.FullName)
-                    .HasMaxLength(100)
-                    .IsUnicode(false)
+                    .HasMaxLength(255)
                     .HasColumnName("full_name");
 
                 entity.Property(e => e.Password)

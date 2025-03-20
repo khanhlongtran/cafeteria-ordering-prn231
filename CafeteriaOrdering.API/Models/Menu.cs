@@ -12,7 +12,7 @@ namespace CafeteriaOrdering.API.Models
 
         public int MenuId { get; set; }
         public int ManagerId { get; set; }
-        public string MenuName { get; set; } = null!;
+        public string? MenuName { get; set; }
         public string? Description { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
