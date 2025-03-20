@@ -33,9 +33,13 @@ namespace CafeteriaOrdering.API.Controllers
                     user_id = u.UserId,
                     user_name = u.FullName,
                     cuisines = u.DefaultCuisine,
-                    geoLocation = _context.Addresses
+                    address = _context.Addresses
                         .Where(a => a.UserId == u.UserId)
-                        .Select(a => a.GeoLocation)
+                        .Select(a => new
+                        {
+                            geoLocation = a.GeoLocation,
+                            image = a.Image
+                        })
                         .FirstOrDefault(),
                     menus = u.Menus.Select(m => new
                     {
@@ -51,13 +55,14 @@ namespace CafeteriaOrdering.API.Controllers
                 })
                 .ToListAsync();
 
-            // Lọc theo khoảng cách (nếu hệ thống có hỗ trợ tính toán khoảng cách)
+            // Lọc theo khoảng cách
             var filteredResult = result
-                .Where(u => u.geoLocation != null && IsNearby(u.geoLocation, geoLocation))
+                .Where(u => u.address?.geoLocation != null && IsNearby(u.address.geoLocation, geoLocation))
                 .ToList();
 
             return Ok(filteredResult);
         }
+
 
         // Hàm kiểm tra vị trí gần (có thể dùng thư viện tính khoảng cách nếu cần)
         private bool IsNearby(string userGeoLocation, string requestGeoLocation)
