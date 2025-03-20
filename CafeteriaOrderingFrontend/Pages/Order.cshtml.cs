@@ -1,205 +1,239 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using CafeteriaOrdering.API.Models;
-using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text;
+using CafeteriaOrdering.API.Models;
+using CafeteriaOrdering.API.DTO;
+using System.Text.Json.Serialization;
 
 namespace CafeteriaOrderingFrontend.Pages
 {
     public class OrderModel : PageModel
     {
-        [BindProperty]
-        public List<Order> Orders { get; set; }
-        [BindProperty]
-        public Order SelectedOrder { get; set; }
+        private readonly ILogger<OrderModel> _logger;
+        private readonly HttpClient _httpClient;
+        private readonly string _apiBaseUrl;
+
+        public List<Order> Orders { get; set; } = new();
         public string Message { get; set; }
         public bool IsSuccess { get; set; }
 
-        private readonly List<Order> _mockOrders;
-        private readonly Dictionary<int, MenuItem> _mockMenuItems;
-
-        public OrderModel()
+        public OrderModel(ILogger<OrderModel> logger, HttpClient httpClient, IConfiguration configuration)
         {
-            Orders = new List<Order>();
-            SelectedOrder = new Order();
+            _logger = logger;
+            _httpClient = httpClient;
+            _apiBaseUrl = configuration["ApiSettings:BaseUrl"];
+        }
 
-            // Initialize mock menu items
-            _mockMenuItems = new Dictionary<int, MenuItem>
+        public async Task<IActionResult> OnGetAsync()
+        {
+            try
             {
-                { 1, new MenuItem { ItemId = 1, ItemName = "Classic Burger", Description = "Juicy beef patty with fresh lettuce and tomato", Price = 8.99m, ItemType = "Main Course", IsStatus = true } },
-                { 2, new MenuItem { ItemId = 2, ItemName = "Chicken Caesar Salad", Description = "Crisp romaine lettuce, grilled chicken, parmesan cheese", Price = 12.99m, ItemType = "Main Course", IsStatus = true } },
-                { 3, new MenuItem { ItemId = 3, ItemName = "French Fries", Description = "Crispy golden fries with sea salt", Price = 4.99m, ItemType = "Side Dish", IsStatus = true } },
-                { 4, new MenuItem { ItemId = 4, ItemName = "Coca Cola", Description = "Ice-cold Coca Cola", Price = 2.99m, ItemType = "Beverage", IsStatus = true } },
-                { 5, new MenuItem { ItemId = 5, ItemName = "Pizza Margherita", Description = "Fresh tomatoes, mozzarella, and basil", Price = 24.99m, ItemType = "Main Course", IsStatus = true } },
-                { 6, new MenuItem { ItemId = 6, ItemName = "Chocolate Cake", Description = "Rich chocolate cake with ganache", Price = 6.99m, ItemType = "Dessert", IsStatus = true } },
-                { 7, new MenuItem { ItemId = 7, ItemName = "Ice Cream Sundae", Description = "Vanilla ice cream with hot fudge and nuts", Price = 5.99m, ItemType = "Dessert", IsStatus = true } },
-                { 8, new MenuItem { ItemId = 8, ItemName = "Mineral Water", Description = "Pure spring water", Price = 1.99m, ItemType = "Beverage", IsStatus = true } }
-            };
+                _logger.LogInformation("=== Starting Get Orders API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/GetAllOrder";
+                
+                var response = await _httpClient.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Content: {Content}", content);
 
-            // Initialize mock orders
-            _mockOrders = new List<Order>
-            {
-                new Order
+                if (response.IsSuccessStatusCode)
                 {
-                    OrderId = 1,
-                    UserId = 1,
-                    OrderDate = DateTime.Now.AddDays(-2),
-                    Status = "Pending",
-                    PaymentMethod = "Credit Card",
-                    TotalAmount = 45.97m,
-                    AddressId = 1,
-                    CreatedAt = DateTime.Now.AddDays(-2),
-                    UpdatedAt = DateTime.Now.AddDays(-2),
-                    User = new User 
-                    { 
-                        UserId = 1,
-                        FullName = "John Doe",
-                        Email = "john@example.com",
-                        Phone = "123-456-7890",
-                        Password = "hashed_password",
-                        Role = "Customer",
-                        CreatedAt = DateTime.Now.AddDays(-30),
-                        UpdatedAt = DateTime.Now.AddDays(-30)
-                    },
-                    Address = new Address
+                    Orders = JsonSerializer.Deserialize<List<Order>>(content, new JsonSerializerOptions
                     {
-                        AddressId = 1,
-                        UserId = 1,
-                        AddressLine = "123 Main St",
-                        City = "New York",
-                        State = "NY",
-                        ZipCode = "10001",
-                        IsDefault = true,
-                        CreatedAt = DateTime.Now.AddDays(-30),
-                        UpdatedAt = DateTime.Now.AddDays(-30)
-                    },
-                    OrderItems = new List<OrderItem>
-                    {
-                        new OrderItem { OrderItemId = 1, OrderId = 1, ItemId = 1, Quantity = 2, Price = 8.99m },
-                        new OrderItem { OrderItemId = 2, OrderId = 1, ItemId = 3, Quantity = 1, Price = 4.99m },
-                        new OrderItem { OrderItemId = 3, OrderId = 1, ItemId = 4, Quantity = 2, Price = 2.99m }
-                    }
-                },
-                new Order
-                {
-                    OrderId = 2,
-                    UserId = 2,
-                    OrderDate = DateTime.Now.AddDays(-1),
-                    Status = "Delivered",
-                    PaymentMethod = "Cash",
-                    TotalAmount = 29.99m,
-                    AddressId = 2,
-                    CreatedAt = DateTime.Now.AddDays(-1),
-                    UpdatedAt = DateTime.Now.AddDays(-1),
-                    User = new User 
-                    { 
-                        UserId = 2,
-                        FullName = "Jane Smith",
-                        Email = "jane@example.com",
-                        Phone = "098-765-4321",
-                        Password = "hashed_password",
-                        Role = "Customer",
-                        CreatedAt = DateTime.Now.AddDays(-25),
-                        UpdatedAt = DateTime.Now.AddDays(-25)
-                    },
-                    Address = new Address
-                    {
-                        AddressId = 2,
-                        UserId = 2,
-                        AddressLine = "456 Oak Ave",
-                        City = "Los Angeles",
-                        State = "CA",
-                        ZipCode = "90001",
-                        IsDefault = true,
-                        CreatedAt = DateTime.Now.AddDays(-25),
-                        UpdatedAt = DateTime.Now.AddDays(-25)
-                    },
-                    OrderItems = new List<OrderItem>
-                    {
-                        new OrderItem { OrderItemId = 4, OrderId = 2, ItemId = 5, Quantity = 1, Price = 24.99m },
-                        new OrderItem { OrderItemId = 5, OrderId = 2, ItemId = 6, Quantity = 1, Price = 6.99m }
-                    }
+                        PropertyNameCaseInsensitive = true,
+                        ReferenceHandler = ReferenceHandler.Preserve
+                    });
+                    return Page();
                 }
-            };
-        }
-
-        public IActionResult OnGet()
-        {
-            Orders = _mockOrders;
-            return Page();
-        }
-
-        public IActionResult OnGetOrderDetails(int orderId)
-        {
-            var order = _mockOrders.FirstOrDefault(o => o.OrderId == orderId);
-            if (order == null)
-            {
-                return new JsonResult(new { error = "Order not found" });
-            }
-
-            // Add menu item details to each order item
-            foreach (var item in order.OrderItems)
-            {
-                if (_mockMenuItems.TryGetValue(item.ItemId, out var menuItem))
+                else
                 {
-                    item.Item = menuItem;
+                    Message = "Failed to load orders";
+                    IsSuccess = false;
+                    return Page();
                 }
             }
-
-            // Create an anonymous object with the correct property names for JSON serialization
-            var orderDetails = new
+            catch (Exception ex)
             {
-                orderId = order.OrderId,
-                orderDate = order.OrderDate,
-                status = order.Status,
-                paymentMethod = order.PaymentMethod,
-                totalAmount = order.TotalAmount,
-                user = new
-                {
-                    fullName = order.User.FullName,
-                    email = order.User.Email,
-                    phone = order.User.Phone
-                },
-                address = new
-                {
-                    addressLine = order.Address.AddressLine,
-                    city = order.Address.City,
-                    state = order.Address.State,
-                    zipCode = order.Address.ZipCode
-                },
-                orderItems = order.OrderItems.Select(item => new
-                {
-                    quantity = item.Quantity,
-                    price = item.Price,
-                    item = new
-                    {
-                        itemName = item.Item?.ItemName ?? "Unknown Item",
-                        description = item.Item?.Description ?? "No description available",
-                        itemType = item.Item?.ItemType ?? "Unknown Type"
-                    }
-                })
-            };
-
-            return new JsonResult(orderDetails);
-        }
-
-        public IActionResult OnPostUpdateStatus(int orderId, string status)
-        {
-            var order = _mockOrders.FirstOrDefault(o => o.OrderId == orderId);
-            if (order != null)
-            {
-                order.Status = status;
-                order.UpdatedAt = DateTime.Now;
-                Message = "Order status updated successfully";
-                IsSuccess = true;
-            }
-            else
-            {
-                Message = "Order not found";
+                _logger.LogError(ex, "Error loading orders");
+                Message = $"Error: {ex.Message}";
                 IsSuccess = false;
+                return Page();
             }
-            Orders = _mockOrders;
-            return Page();
+        }
+
+        public async Task<IActionResult> OnGetTrackOrderAsync(int orderId)
+        {
+            try
+            {
+                var url = $"{_apiBaseUrl}/api/Manager/GetOrderItems/{orderId}";
+                var response = await _httpClient.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                return new JsonResult(new { success = response.IsSuccessStatusCode, content });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = ex.Message });
+            }
+        }
+
+        public async Task<IActionResult> OnPostUpdateOrderStatusAsync(int orderId, [FromBody] UpdateStatusRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("=== Starting Update Order Status API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/{orderId}/status";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: PUT");
+                _logger.LogInformation("Request Body: {Body}", JsonSerializer.Serialize(request));
+
+                var response = await _httpClient.PutAsJsonAsync(url, request);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Update Order Status API Call ===");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return new JsonResult(new { success = true, content });
+                }
+                else
+                {
+                    return new JsonResult(new { success = false, message = "Failed to update order status", content });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating order status for order {OrderId}", orderId);
+                return new JsonResult(new { success = false, message = ex.Message });
+            }
+        }
+
+        public async Task<IActionResult> OnPostSubmitFeedbackAsync([FromBody] FeedbackRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("=== Starting Submit Feedback API Call ===");
+                var url = $"{_apiBaseUrl}/api/Patron/MyOrder/MakeAFeedback";
+                
+                // Set the user ID to 1 for testing
+                request.UserId = 1;
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: POST");
+                _logger.LogInformation("Request Data: {Data}", JsonSerializer.Serialize(request));
+
+                var response = await _httpClient.PostAsJsonAsync(url, request);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Submit Feedback API Call ===");
+
+                return new JsonResult(new { success = response.IsSuccessStatusCode, content });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting feedback");
+                return new JsonResult(new { success = false, message = ex.Message });
+            }
+        }
+
+        public async Task<IActionResult> OnPostProcessPaymentAsync(int orderId, string paymentMethod)
+        {
+            try
+            {
+                _logger.LogInformation("=== Starting Process Payment API Call ===");
+                var url = $"{_apiBaseUrl}/api/Checkout/{paymentMethod}?orderId={orderId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: POST");
+
+                var response = await _httpClient.PostAsync(url, null);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Process Payment API Call ===");
+
+                return new JsonResult(new { success = response.IsSuccessStatusCode, content });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing payment for order {OrderId}", orderId);
+                return new JsonResult(new { success = false, message = ex.Message });
+            }
+        }
+
+        public async Task<IActionResult> OnGetGetOrderItemsAsync(int orderId)
+        {
+            try
+            {
+                _logger.LogInformation("=== Starting Get Order Items API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/GetOrderItems/{orderId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: GET");
+
+                var response = await _httpClient.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Content: {Content}", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        ReferenceHandler = ReferenceHandler.Preserve
+                    };
+
+                    // Deserialize the root object first
+                    var rootObject = JsonSerializer.Deserialize<JsonDocument>(content, options);
+                    var itemsArray = rootObject.RootElement.GetProperty("$values");
+                    
+                    if (itemsArray.GetArrayLength() == 0)
+                    {
+                        return new JsonResult(new { success = false, message = "No items found" });
+                    }
+
+                    var simplifiedItems = new List<object>();
+                    foreach (var item in itemsArray.EnumerateArray())
+                    {
+                        var orderItem = item.Deserialize<OrderItem>(options);
+                        simplifiedItems.Add(new
+                        {
+                            itemName = orderItem.Item?.ItemName ?? "Unknown Item",
+                            quantity = orderItem.Quantity,
+                            price = orderItem.Price,
+                            total = orderItem.Price
+                        });
+                    }
+
+                    return new JsonResult(new { success = true, items = simplifiedItems });
+                }
+                else
+                {
+                    return new JsonResult(new { success = false, message = "Failed to load order items" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading order items for order {OrderId}: {Message}", orderId, ex.Message);
+                return new JsonResult(new { success = false, message = ex.Message });
+            }
+        }
+
+        public class UpdateStatusRequest
+        {
+            public string Status { get; set; }
         }
     }
 } 

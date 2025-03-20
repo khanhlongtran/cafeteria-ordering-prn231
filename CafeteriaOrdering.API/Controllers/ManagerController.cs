@@ -11,7 +11,7 @@ using CafeteriaOrdering.API.DTO;
 
 namespace ManagerAPI.Controllers
 {
-    [Authorize("MANAGER")]
+    // [Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]
     public class ManagerController : ControllerBase
@@ -340,7 +340,7 @@ namespace ManagerAPI.Controllers
         {
             var orderItems = await _context.OrderItems
                 .Where(oi => oi.OrderId == orderId)
-                //.Include(oi => oi.ItemId) // Nếu muốn lấy thông tin chi tiết về món ăn
+                .Include(x => x.Item) // Nếu muốn lấy thông tin chi tiết về món ăn
                 .AsNoTracking()
                 .ToListAsync();
 
