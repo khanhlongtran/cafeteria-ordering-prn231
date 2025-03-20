@@ -7,13 +7,18 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using CafeteriaOrdering.API.Models;
 using Microsoft.Extensions.Configuration;
+using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 
 namespace CafeteriaOrderingFrontend.Pages
 {
     public class MenuModel : PageModel
     {
         private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
         private readonly string _apiBaseUrl;
+        private readonly ILogger<MenuModel> _logger;
+        private readonly JsonSerializerOptions _jsonOptions;
 
         [BindProperty]
         public List<Menu> Menus { get; set; } = new();
@@ -24,235 +29,276 @@ namespace CafeteriaOrderingFrontend.Pages
         public string Message { get; set; }
         public bool IsSuccess { get; set; }
 
-        public MenuModel(IConfiguration configuration, HttpClient httpClient)
+        public MenuModel(HttpClient httpClient, IConfiguration configuration, ILogger<MenuModel> logger)
         {
             _httpClient = httpClient;
-            _apiBaseUrl = configuration["ApiSettings:BaseUrl"];
+            _configuration = configuration;
+            _apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5110";
+            _logger = logger;
             NewMenu = new Menu();
             EditingMenu = new Menu();
+            _jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
         }
 
         public async Task<IActionResult> OnGetAsync()
         {
             try
             {
-                // TODO: Replace with actual API call when ready
-                // var response = await _httpClient.GetAsync($"{_apiBaseUrl}/api/menus");
-                // if (response.IsSuccessStatusCode)
-                // {
-                //     Menus = await response.Content.ReadFromJsonAsync<List<Menu>>();
-                // }
-                // else
-                // {
-                //     Message = "Failed to load menus.";
-                //     IsSuccess = false;
-                // }
+                _logger.LogInformation("=== Starting Get Menus API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/ViewMenu";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: GET");
+                
+                var response = await _httpClient.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Get Menus API Call ===");
 
-                // Mock data for testing
-                Menus = GetMockMenus();
+                if (response.IsSuccessStatusCode)
+                {
+                    Menus = JsonSerializer.Deserialize<List<Menu>>(content, _jsonOptions);
+                    return Page();
+                }
+                else
+                {
+                    Message = "Failed to load menus";
+                    IsSuccess = false;
+                    return Page();
+                }
             }
             catch (Exception ex)
             {
-                Message = "An error occurred while loading menus.";
+                _logger.LogError(ex, "Error fetching menus");
+                Message = $"Error: {ex.Message}";
                 IsSuccess = false;
-            }
-
-            return Page();
-        }
-
-        public async Task<IActionResult> OnGetMenuAsync(int menuId)
-        {
-            try
-            {
-                // TODO: Replace with actual API call when ready
-                // var response = await _httpClient.GetAsync($"{_apiBaseUrl}/api/menus/{menuId}");
-                // if (response.IsSuccessStatusCode)
-                // {
-                //     var menu = await response.Content.ReadFromJsonAsync<Menu>();
-                //     return new JsonResult(menu);
-                // }
-                // return new JsonResult(new { error = "Menu not found" }) { StatusCode = 404 };
-
-                // Mock data for testing
-                var menu = GetMockMenus().FirstOrDefault(m => m.MenuId == menuId);
-                if (menu != null)
-                {
-                    return new JsonResult(menu);
-                }
-                return new JsonResult(new { error = "Menu not found" }) { StatusCode = 404 };
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new { error = "An error occurred" }) { StatusCode = 500 };
+                return Page();
             }
         }
 
-        public async Task<IActionResult> OnGetMenuItemsAsync(int menuId)
+        public async Task<IActionResult> OnGetGetMenuAsync(int menuId)
         {
             try
             {
-                // TODO: Replace with actual API call when ready
-                // var response = await _httpClient.GetAsync($"{_apiBaseUrl}/api/menus/{menuId}/items");
-                // if (response.IsSuccessStatusCode)
-                // {
-                //     var items = await response.Content.ReadFromJsonAsync<List<MenuItem>>();
-                //     return new JsonResult(items);
-                // }
-                // return new JsonResult(new { error = "Menu items not found" }) { StatusCode = 404 };
+                _logger.LogInformation("=== Starting Get Menu API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/ViewMenu";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: GET");
+                _logger.LogInformation("Request Data: MenuId={MenuId}", menuId);
+                
+                var response = await _httpClient.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Get Menu API Call ===");
 
-                // Mock data for testing
-                var menu = GetMockMenus().FirstOrDefault(m => m.MenuId == menuId);
-                if (menu != null && menu.MenuItems != null)
+                if (response.IsSuccessStatusCode)
                 {
-                    Response.Headers.Add("Content-Type", "application/json");
-                    return new JsonResult(new { 
-                        success = true, 
-                        items = menu.MenuItems 
-                    });
-                }
-                Response.Headers.Add("Content-Type", "application/json");
-                return new JsonResult(new { 
-                    success = false, 
-                    error = "Menu items not found" 
-                }) 
-                { 
-                    StatusCode = 404
-                };
-            }
-            catch (Exception ex)
-            {
-                Response.Headers.Add("Content-Type", "application/json");
-                return new JsonResult(new { 
-                    success = false, 
-                    error = "An error occurred while loading menu items" 
-                }) 
-                { 
-                    StatusCode = 500
-                };
-            }
-        }
-
-        public async Task<IActionResult> OnGetMenuItemAsync(int itemId)
-        {
-            try
-            {
-                // TODO: Replace with actual API call when ready
-                // var response = await _httpClient.GetAsync($"{_apiBaseUrl}/api/menu-items/{itemId}");
-                // if (response.IsSuccessStatusCode)
-                // {
-                //     var item = await response.Content.ReadFromJsonAsync<MenuItem>();
-                //     return new JsonResult(item);
-                // }
-                // return new JsonResult(new { error = "Menu item not found" }) { StatusCode = 404 };
-
-                // Mock data for testing
-                var menu = GetMockMenus().FirstOrDefault(m => m.MenuItems.Any(i => i.ItemId == itemId));
-                if (menu != null)
-                {
-                    var item = menu.MenuItems.FirstOrDefault(i => i.ItemId == itemId);
-                    if (item != null)
+                    var menus = JsonSerializer.Deserialize<List<Menu>>(content, _jsonOptions);
+                    var menu = menus.FirstOrDefault(m => m.MenuId == menuId);
+                    if (menu != null)
                     {
-                        return new JsonResult(item);
+                        return new JsonResult(menu, _jsonOptions);
                     }
                 }
-                return new JsonResult(new { error = "Menu item not found" }) { StatusCode = 404 };
+                return new NotFoundResult();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return new JsonResult(new { error = "An error occurred" }) { StatusCode = 500 };
+                _logger.LogError(ex, "Error fetching menu {MenuId}", menuId);
+                return new StatusCodeResult(500);
             }
         }
 
-        public async Task<IActionResult> OnPostSaveMenuAsync([FromForm] int menuId, [FromForm] string menuName, 
-            [FromForm] string description, [FromForm] bool isStatus)
+        public async Task<IActionResult> OnGetGetMenuItemsAsync(int menuId)
         {
             try
             {
-                // TODO: Replace with actual API call when ready
-                // var menu = new Menu
-                // {
-                //     MenuId = menuId,
-                //     MenuName = menuName,
-                //     Description = description,
-                //     IsStatus = isStatus
-                // };
-                // HttpResponseMessage response;
-                // if (menuId == 0)
-                // {
-                //     response = await _httpClient.PostAsJsonAsync($"{_apiBaseUrl}/api/menus", menu);
-                // }
-                // else
-                // {
-                //     response = await _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/api/menus/{menuId}", menu);
-                // }
-                // if (response.IsSuccessStatusCode)
-                // {
-                //     Message = menuId == 0 ? "Menu created successfully." : "Menu updated successfully.";
-                //     IsSuccess = true;
-                // }
-                // else
-                // {
-                //     Message = "Failed to save menu.";
-                //     IsSuccess = false;
-                // }
+                _logger.LogInformation("=== Starting Get Menu Items API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/ViewMenuItems/{menuId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: GET");
+                _logger.LogInformation("Request Data: MenuId={MenuId}", menuId);
 
-                // Mock success response
-                Message = menuId == 0 ? "Menu created successfully." : "Menu updated successfully.";
-                IsSuccess = true;
+                var response = await _httpClient.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Get Menu Items API Call ===");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var items = JsonSerializer.Deserialize<List<MenuItem>>(content, _jsonOptions);
+                    return new JsonResult(items, _jsonOptions);
+                }
+                return new NotFoundResult();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Message = "An error occurred while saving the menu.";
+                _logger.LogError(ex, "Error fetching menu items for menu {MenuId}", menuId);
+                return new StatusCodeResult(500);
+            }
+        }
+
+        public async Task<IActionResult> OnGetGetMenuItemAsync(int itemId)
+        {
+            try
+            {
+                _logger.LogInformation("=== Starting Get Menu Item API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/ViewMenuItem/{itemId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: GET");
+                _logger.LogInformation("Request Data: ItemId={ItemId}", itemId);
+                
+                var response = await _httpClient.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Get Menu Item API Call ===");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var item = JsonSerializer.Deserialize<MenuItem>(content, _jsonOptions);
+                    return new JsonResult(item, _jsonOptions);
+                }
+                return new NotFoundResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching menu item {ItemId}", itemId);
+                return new StatusCodeResult(500);
+            }
+        }
+
+        public async Task<IActionResult> OnPostSaveMenuAsync([FromForm] int menuId, [FromForm] string menuName, [FromForm] string description, [FromForm] bool isStatus)
+        {
+            try
+            {
+                _logger.LogInformation("=== Starting Save Menu API Call ===");
+                var formData = new MultipartFormDataContent();
+                formData.Add(new StringContent(menuId.ToString()), "MenuId");
+                formData.Add(new StringContent(menuName), "MenuName");
+                formData.Add(new StringContent(description), "Description");
+                formData.Add(new StringContent(isStatus.ToString().ToLower()), "IsStatus");
+                formData.Add(new StringContent("1"), "ManagerId");
+
+                var url = menuId == 0 
+                    ? $"{_apiBaseUrl}/api/Manager/CreateMenu"
+                    : $"{_apiBaseUrl}/api/Manager/UpdateMenu/{menuId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: {Method}", menuId == 0 ? "POST" : "PUT");
+                _logger.LogInformation("Request Data: MenuId={MenuId}, MenuName={MenuName}, Description={Description}, IsStatus={IsStatus}, ManagerId=1", 
+                    menuId, menuName, description, isStatus);
+
+                HttpResponseMessage response;
+                if (menuId == 0)
+                {
+                    response = await _httpClient.PostAsync(url, formData);
+                }
+                else
+                {
+                    response = await _httpClient.PutAsync(url, formData);
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Save Menu API Call ===");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var successMessage = menuId == 0 ? "Menu created successfully" : "Menu updated successfully";
+                    return RedirectToPage(new { message = Uri.EscapeDataString(successMessage) });
+                }
+                else
+                {
+                    Message = menuId == 0 ? "Failed to create menu" : "Failed to update menu";
+                    IsSuccess = false;
+                    return Page();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving menu");
+                Message = $"Error: {ex.Message}";
                 IsSuccess = false;
+                return Page();
             }
-
-            return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostSaveMenuItemAsync([FromForm] int itemId, [FromForm] int menuId,
-            [FromForm] string itemName, [FromForm] string description, [FromForm] decimal price,
-            [FromForm] string itemType, [FromForm] bool isStatus)
+        public async Task<IActionResult> OnPostSaveMenuItemAsync([FromForm] int itemId, [FromForm] int menuId, [FromForm] string itemName, [FromForm] string description, [FromForm] decimal price, [FromForm] string itemType, [FromForm] bool isStatus)
         {
             try
             {
-                // TODO: Replace with actual API call when ready
-                // var menuItem = new MenuItem
-                // {
-                //     ItemId = itemId,
-                //     MenuId = menuId,
-                //     ItemName = itemName,
-                //     Description = description,
-                //     Price = price,
-                //     ItemType = itemType,
-                //     IsStatus = isStatus
-                // };
-                // HttpResponseMessage response;
-                // if (itemId == 0)
-                // {
-                //     response = await _httpClient.PostAsJsonAsync($"{_apiBaseUrl}/api/menu-items", menuItem);
-                // }
-                // else
-                // {
-                //     response = await _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/api/menu-items/{itemId}", menuItem);
-                // }
-                // if (response.IsSuccessStatusCode)
-                // {
-                //     Message = itemId == 0 ? "Menu item created successfully." : "Menu item updated successfully.";
-                //     IsSuccess = true;
-                // }
-                // else
-                // {
-                //     Message = "Failed to save menu item.";
-                //     IsSuccess = false;
-                // }
+                _logger.LogInformation("=== Starting Save Menu Item API Call ===");
+                var formData = new MultipartFormDataContent();
+                formData.Add(new StringContent(menuId.ToString()), "MenuId");
+                formData.Add(new StringContent(itemName), "ItemName");
+                formData.Add(new StringContent(description), "Description");
+                formData.Add(new StringContent(price.ToString()), "Price");
+                formData.Add(new StringContent(itemType), "ItemType");
+                formData.Add(new StringContent(isStatus.ToString()), "IsStatus");
 
-                // Mock success response
-                Message = itemId == 0 ? "Menu item created successfully." : "Menu item updated successfully.";
-                IsSuccess = true;
+                var url = itemId == 0 
+                    ? $"{_apiBaseUrl}/api/Manager/CreateMenuItems"
+                    : $"{_apiBaseUrl}/api/Manager/UpdateMenuItems/{itemId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: {Method}", itemId == 0 ? "POST" : "PUT");
+                _logger.LogInformation("Request Data: ItemId={ItemId}, MenuId={MenuId}, ItemName={ItemName}, Description={Description}, Price={Price}, ItemType={ItemType}, IsStatus={IsStatus}", 
+                    itemId, menuId, itemName, description, price, itemType, isStatus);
+
+                HttpResponseMessage response;
+                if (itemId == 0)
+                {
+                    response = await _httpClient.PostAsync(url, formData);
+                }
+                else
+                {
+                    response = await _httpClient.PutAsync(url, formData);
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Save Menu Item API Call ===");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Message = itemId == 0 ? "Menu item created successfully" : "Menu item updated successfully";
+                    IsSuccess = true;
+                }
+                else
+                {
+                    Message = itemId == 0 ? "Failed to create menu item" : "Failed to update menu item";
+                    IsSuccess = false;
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Message = "An error occurred while saving the menu item.";
+                _logger.LogError(ex, "Error saving menu item");
+                Message = $"Error: {ex.Message}";
                 IsSuccess = false;
             }
 
@@ -263,26 +309,38 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
-                // TODO: Replace with actual API call when ready
-                // var response = await _httpClient.DeleteAsync($"{_apiBaseUrl}/api/menus/{menuId}");
-                // if (response.IsSuccessStatusCode)
-                // {
-                //     Message = "Menu deleted successfully.";
-                //     IsSuccess = true;
-                // }
-                // else
-                // {
-                //     Message = "Failed to delete menu.";
-                //     IsSuccess = false;
-                // }
+                _logger.LogInformation("=== Starting Delete Menu API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/DeleteMenu/{menuId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: DELETE");
+                _logger.LogInformation("Request Data: MenuId={MenuId}", menuId);
 
-                // Mock success response
-                Message = "Menu deleted successfully.";
-                IsSuccess = true;
+                var response = await _httpClient.DeleteAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Delete Menu API Call ===");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = JsonSerializer.Deserialize<Dictionary<string, string>>(content);
+                    Message = result["message"] ?? "Menu deactivated successfully";
+                    IsSuccess = true;
+                }
+                else
+                {
+                    var error = JsonSerializer.Deserialize<Dictionary<string, string>>(content);
+                    Message = error["message"] ?? "Failed to deactivate menu";
+                    IsSuccess = false;
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Message = "An error occurred while deleting the menu.";
+                _logger.LogError(ex, "Error deleting menu {MenuId}", menuId);
+                Message = $"Error: {ex.Message}";
                 IsSuccess = false;
             }
 
@@ -293,30 +351,35 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
-                // TODO: Replace with actual API call when ready
-                // var response = await _httpClient.DeleteAsync($"{_apiBaseUrl}/api/menu-items/{itemId}");
-                // if (response.IsSuccessStatusCode)
-                // {
-                //     Message = "Menu item deleted successfully.";
-                //     IsSuccess = true;
-                // }
-                // else
-                // {
-                //     Message = "Failed to delete menu item.";
-                //     IsSuccess = false;
-                // }
+                _logger.LogInformation("=== Starting Delete Menu Item API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/DeleteMenuItem/{itemId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: DELETE");
+                _logger.LogInformation("Request Data: ItemId={ItemId}", itemId);
 
-                // Mock success response
-                Message = "Menu item deleted successfully.";
-                IsSuccess = true;
+                var response = await _httpClient.DeleteAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Delete Menu Item API Call ===");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return new JsonResult(new { success = true, message = "Menu item deleted successfully" });
+                }
+                else
+                {
+                    return new JsonResult(new { success = false, message = "Failed to delete menu item" }, StatusCodes.Status400BadRequest);
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Message = "An error occurred while deleting the menu item.";
-                IsSuccess = false;
+                _logger.LogError(ex, "Error deleting menu item {ItemId}", itemId);
+                return new JsonResult(new { success = false, message = ex.Message }, StatusCodes.Status500InternalServerError);
             }
-
-            return RedirectToPage();
         }
 
         public async Task<IActionResult> OnPostCreateMenuAsync()
@@ -422,294 +485,6 @@ namespace CafeteriaOrderingFrontend.Pages
             }
 
             return Page();
-        }
-
-        // Mock data method - REMOVE THIS WHEN READY TO USE API
-        private List<Menu> GetMockMenus()
-        {
-            return new List<Menu>
-            {
-                new Menu
-                {
-                    MenuId = 1,
-                    MenuName = "Breakfast Menu",
-                    Description = "Start your day with our delicious breakfast options",
-                    IsStatus = true,
-                    MenuItems = new List<MenuItem>
-                    {
-                        new MenuItem
-                        {
-                            ItemId = 1,
-                            MenuId = 1,
-                            ItemName = "Classic Breakfast Set",
-                            Description = "Two eggs, bacon, toast, and coffee",
-                            Price = 12.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 2,
-                            MenuId = 1,
-                            ItemName = "Pancake Stack",
-                            Description = "Fluffy pancakes with maple syrup and butter",
-                            Price = 9.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 3,
-                            MenuId = 1,
-                            ItemName = "Fresh Orange Juice",
-                            Description = "100% pure squeezed orange juice",
-                            Price = 3.99m,
-                            ItemType = "Beverage",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 13,
-                            MenuId = 1,
-                            ItemName = "Eggs Benedict",
-                            Description = "Poached eggs on English muffin with hollandaise sauce",
-                            Price = 14.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 14,
-                            MenuId = 1,
-                            ItemName = "Breakfast Burrito",
-                            Description = "Scrambled eggs, cheese, and sausage wrapped in a tortilla",
-                            Price = 11.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 15,
-                            MenuId = 1,
-                            ItemName = "Greek Yogurt Parfait",
-                            Description = "Layered with granola and fresh berries",
-                            Price = 7.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        }
-                    }
-                },
-                new Menu
-                {
-                    MenuId = 2,
-                    MenuName = "Lunch Specials",
-                    Description = "Daily lunch specials and favorites",
-                    IsStatus = true,
-                    MenuItems = new List<MenuItem>
-                    {
-                        new MenuItem
-                        {
-                            ItemId = 4,
-                            MenuId = 2,
-                            ItemName = "Grilled Chicken Salad",
-                            Description = "Fresh mixed greens with grilled chicken breast",
-                            Price = 14.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 5,
-                            MenuId = 2,
-                            ItemName = "Caesar Salad",
-                            Description = "Classic Caesar salad with croutons and parmesan",
-                            Price = 12.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 6,
-                            MenuId = 2,
-                            ItemName = "French Fries",
-                            Description = "Crispy golden fries with sea salt",
-                            Price = 4.99m,
-                            ItemType = "Side Dish",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 16,
-                            MenuId = 2,
-                            ItemName = "Club Sandwich",
-                            Description = "Triple-decker with turkey, bacon, lettuce, and tomato",
-                            Price = 13.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 17,
-                            MenuId = 2,
-                            ItemName = "Soup of the Day",
-                            Description = "Chef's daily special soup",
-                            Price = 6.99m,
-                            ItemType = "Appetizer",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 18,
-                            MenuId = 2,
-                            ItemName = "Onion Rings",
-                            Description = "Crispy battered onion rings with dipping sauce",
-                            Price = 5.99m,
-                            ItemType = "Side Dish",
-                            IsStatus = true
-                        }
-                    }
-                },
-                new Menu
-                {
-                    MenuId = 3,
-                    MenuName = "Dinner Menu",
-                    Description = "Evening dining options and specialties",
-                    IsStatus = true,
-                    MenuItems = new List<MenuItem>
-                    {
-                        new MenuItem
-                        {
-                            ItemId = 7,
-                            MenuId = 3,
-                            ItemName = "Grilled Salmon",
-                            Description = "Fresh salmon with seasonal vegetables",
-                            Price = 24.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 8,
-                            MenuId = 3,
-                            ItemName = "Beef Tenderloin",
-                            Description = "8oz tenderloin with red wine sauce",
-                            Price = 29.99m,
-                            ItemType = "Main Course",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 9,
-                            MenuId = 3,
-                            ItemName = "Chocolate Lava Cake",
-                            Description = "Warm chocolate cake with vanilla ice cream",
-                            Price = 8.99m,
-                            ItemType = "Dessert",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 19,
-                            MenuId = 3,
-                            ItemName = "Bruschetta",
-                            Description = "Toasted bread with tomatoes, garlic, and basil",
-                            Price = 7.99m,
-                            ItemType = "Appetizer",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 20,
-                            MenuId = 3,
-                            ItemName = "Mashed Potatoes",
-                            Description = "Creamy mashed potatoes with butter",
-                            Price = 5.99m,
-                            ItemType = "Side Dish",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 21,
-                            MenuId = 3,
-                            ItemName = "Tiramisu",
-                            Description = "Classic Italian dessert with coffee and mascarpone",
-                            Price = 7.99m,
-                            ItemType = "Dessert",
-                            IsStatus = true
-                        }
-                    }
-                },
-                new Menu
-                {
-                    MenuId = 4,
-                    MenuName = "Beverages",
-                    Description = "Refreshing drinks and specialty coffees",
-                    IsStatus = true,
-                    MenuItems = new List<MenuItem>
-                    {
-                        new MenuItem
-                        {
-                            ItemId = 10,
-                            MenuId = 4,
-                            ItemName = "Espresso",
-                            Description = "Double shot of premium espresso",
-                            Price = 3.99m,
-                            ItemType = "Beverage",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 11,
-                            MenuId = 4,
-                            ItemName = "Green Tea Latte",
-                            Description = "Matcha green tea with steamed milk",
-                            Price = 4.99m,
-                            ItemType = "Beverage",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 12,
-                            MenuId = 4,
-                            ItemName = "Smoothie Bowl",
-                            Description = "Mixed berry smoothie with granola topping",
-                            Price = 8.99m,
-                            ItemType = "Beverage",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 22,
-                            MenuId = 4,
-                            ItemName = "Caramel Macchiato",
-                            Description = "Vanilla-flavored drink marked with espresso",
-                            Price = 5.99m,
-                            ItemType = "Beverage",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 23,
-                            MenuId = 4,
-                            ItemName = "Iced Tea",
-                            Description = "Freshly brewed iced tea with lemon",
-                            Price = 3.99m,
-                            ItemType = "Beverage",
-                            IsStatus = true
-                        },
-                        new MenuItem
-                        {
-                            ItemId = 24,
-                            MenuId = 4,
-                            ItemName = "Hot Chocolate",
-                            Description = "Rich and creamy hot chocolate with whipped cream",
-                            Price = 4.99m,
-                            ItemType = "Beverage",
-                            IsStatus = true
-                        }
-                    }
-                }
-            };
         }
     }
 }
