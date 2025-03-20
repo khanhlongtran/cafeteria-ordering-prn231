@@ -6,10 +6,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CafeteriaOrdering.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using CafeteriaOrdering.API.DTO;
 
 namespace ManagerAPI.Controllers
 {
+    [Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]
     public class ManagerController : ControllerBase
