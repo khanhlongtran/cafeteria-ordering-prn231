@@ -6,10 +6,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CafeteriaOrdering.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using CafeteriaOrdering.API.DTO;
 
 namespace ManagerAPI.Controllers
 {
+    [Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]
     public class ManagerController : ControllerBase
@@ -307,5 +309,73 @@ namespace ManagerAPI.Controllers
         }
 
 
+
+        //================================Order===================================
+
+        [HttpGet("GetAllOrder")]
+        public async Task<ActionResult<IEnumerable<Order>>> GetAllOrder()
+        {
+            var orders = await _context.Orders.ToListAsync();
+            return Ok(orders);
+        }
+
+        [HttpGet("GetOrderByAddress/{addressId}")]
+        public async Task<ActionResult<IEnumerable<Order>>> GetOrderByAddress(int addressId)
+        {
+            var orders = await _context.Orders
+                                       .Where(o => o.AddressId == addressId)
+                                       .ToListAsync();
+
+            if (orders == null || !orders.Any())
+            {
+                return NotFound(new { message = "No orders found for this address." });
+            }
+
+            return Ok(orders);
+        }
+
+
+        [HttpGet("GetOrderItems/{orderId}")]
+        public async Task<IActionResult> GetOrderItems(int orderId)
+        {
+            var orderItems = await _context.OrderItems
+                .Where(oi => oi.OrderId == orderId)
+                //.Include(oi => oi.ItemId) // Nếu muốn lấy thông tin chi tiết về món ăn
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!orderItems.Any())
+                return NotFound(new { message = "No order items found for this order." });
+
+            return Ok(orderItems);
+        }
+
+
+
+
+        [HttpPut("{orderId}/status")]
+        public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateStatusRequest request)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null)
+            {
+                return NotFound(new { message = "Order not found" });
+            }
+
+            order.Status = request.Status;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Order status updated successfully" });
+        }
     }
+
+    // Model cho request body
+    public class UpdateStatusRequest
+    {
+        public string Status { get; set; } = null!;
+    }
+
+
 }

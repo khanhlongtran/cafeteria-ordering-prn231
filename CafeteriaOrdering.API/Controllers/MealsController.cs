@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
+
 namespace CafeteriaOrdering.API.Controllers
 {
     [Route("api/[controller]")]
@@ -17,17 +18,11 @@ namespace CafeteriaOrdering.API.Controllers
         {
             _context = context;
         }
-
-        [HttpGet("managers-by-location")]
-        public async Task<IActionResult> GetManagersByLocation([FromQuery] string geoLocation)
+        [HttpGet("GeoLocation")]
+        public async Task<IActionResult> GetAllManagersandGeoLocation()
         {
-            if (string.IsNullOrEmpty(geoLocation))
-            {
-                return BadRequest("GeoLocation is required.");
-            }
-
             var result = await _context.Users
-                .Where(u => u.Role == "manager")
+                .Where(u => u.Role.ToLower() == "manager")
                 .Select(u => new
                 {
                     user_id = u.UserId,
@@ -37,7 +32,7 @@ namespace CafeteriaOrdering.API.Controllers
                         .Where(a => a.UserId == u.UserId)
                         .Select(a => new
                         {
-                            geoLocation = a.GeoLocation,
+                            //geoLocation = a.GeoLocation,
                             image = a.Image
                         })
                         .FirstOrDefault(),
@@ -55,22 +50,8 @@ namespace CafeteriaOrdering.API.Controllers
                 })
                 .ToListAsync();
 
-            // Lọc theo khoảng cách
-            var filteredResult = result
-                .Where(u => u.address?.geoLocation != null && IsNearby(u.address.geoLocation, geoLocation))
-                .ToList();
-
-            return Ok(filteredResult);
+            return Ok(result);
         }
 
-
-        // Hàm kiểm tra vị trí gần (có thể dùng thư viện tính khoảng cách nếu cần)
-        private bool IsNearby(string userGeoLocation, string requestGeoLocation)
-        {
-            // Nếu cần so sánh chính xác theo tọa độ:
-            return userGeoLocation == requestGeoLocation;
-
-            // Nếu cần so sánh theo khoảng cách, có thể dùng Haversine Formula hoặc thư viện hỗ trợ.
-        }
     }
-    }
+}

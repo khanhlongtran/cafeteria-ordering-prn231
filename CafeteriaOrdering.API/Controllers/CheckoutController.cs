@@ -1,11 +1,13 @@
 ﻿using CafeteriaOrdering.API.Models;
 using CafeteriaOrdering.API.ZaloPay.Models;
 using CafeteriaOrdering.API.ZaloPay.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CafeteriaOrdering.API.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
     public class CheckoutController : ControllerBase
@@ -18,7 +20,7 @@ namespace CafeteriaOrdering.API.Controllers
             _zaloPayService = zaloPayService;
             _context = context;
         }
-
+        [Authorize]
         [HttpPost("BankingTranfer")]
         public async Task<IActionResult> CreatePayment(int orderId, [FromQuery] string paymentMethod = "all")
         {
@@ -59,7 +61,7 @@ namespace CafeteriaOrdering.API.Controllers
             }
             return BadRequest(new { return_code = -1, return_message = result.Message });
         }
-
+        [Authorize]
         [HttpPost("COD")]
         public async Task<IActionResult> CreateCODPayment(int orderId, [FromQuery] string paymentMethod = "all")
         {

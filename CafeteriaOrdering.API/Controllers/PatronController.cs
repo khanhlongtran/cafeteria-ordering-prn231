@@ -8,15 +8,17 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CafeteriaOrdering.API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class PatronController : ControllerBase
-    {
-        private readonly CafeteriaOrderingDBContext _dbContext;
-        public PatronController(CafeteriaOrderingDBContext dbContext)
+        [Route("api/[controller]")]
+        [ApiController]
+        public class PatronController : ControllerBase
         {
-            _dbContext = dbContext;
-        }
+            private readonly CafeteriaOrderingDBContext _dbContext;
+            public PatronController(CafeteriaOrderingDBContext dbContext)
+            {
+                _dbContext = dbContext;
+            }
+
+        [Authorize("PATRON")]
         [HttpPut("MyAccount/ChangeDefaultCuisine/{userId}")]
         public async Task<IActionResult> ChangeDefaultCuisine(int userId, [FromBody] string defaultCuisine)
         {
@@ -33,8 +35,37 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok("Món ăn mặc định đã được cập nhật thành công.");
         }
 
+        [HttpGet("GetUserAddresses/{userId}")]
+        public async Task<IActionResult> GetUserAddresses(int userId)
+        {
+            var user = await _dbContext.Users
+                .Include(u => u.Addresses)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (user == null)
+            {
+                return NotFound("User không tồn tại.");
+            }
+
+            var addresses = user.Addresses.Select(a => new
+            {
+                a.AddressId,
+                a.AddressLine,
+                a.City,
+                a.State,
+                a.ZipCode,
+                a.IsDefault,
+                a.GeoLocation,
+                a.CreatedAt,
+                a.UpdatedAt
+            }).ToList();
+
+            return Ok(addresses);
+        }
+
+        [Authorize("PATRON")]
         [HttpPost("MyAccount/ChangeAddress/{userId}")]
-        public async Task<IActionResult> ChangeAddress(int userId, [FromBody] IDictionary<string, object> request)
+        public async Task<IActionResult> ChangeAddress(int userId, [FromBody] AddressRequest request)
         {
             var user = await _dbContext.Users.FindAsync(userId);
             if (user == null)
@@ -42,19 +73,13 @@ namespace CafeteriaOrdering.API.Controllers
                 return NotFound("User không tồn tại");
             }
 
-            var addressLine = request.ContainsKey("addressLine") ? request["addressLine"]?.ToString() : null;
-            var city = request.ContainsKey("city") ? request["city"]?.ToString() : null;
-            var state = request.ContainsKey("state") ? request["state"]?.ToString() : null;
-            var zipCode = request.ContainsKey("zipCode") ? request["zipCode"]?.ToString() : null;
-            var isDefault = request.ContainsKey("isDefault") && bool.TryParse(request["isDefault"]?.ToString(), out var result) ? result : false;
-
-            if (string.IsNullOrEmpty(addressLine))
+            if (string.IsNullOrEmpty(request.AddressLine))
             {
                 return BadRequest("AddressLine là bắt buộc");
             }
 
             // Reset địa chỉ mặc định nếu có
-            if (isDefault)
+            if (request.IsDefault)
             {
                 var existingAddresses = _dbContext.Addresses.Where(a => a.UserId == userId && a.IsDefault);
                 foreach (var addr in existingAddresses)
@@ -66,13 +91,15 @@ namespace CafeteriaOrdering.API.Controllers
             var newAddress = new Address
             {
                 UserId = userId,
-                AddressLine = addressLine!,
-                City = city,
-                State = state,
-                ZipCode = zipCode,
-                IsDefault = isDefault,
+                AddressLine = request.AddressLine,
+                City = request.City,
+                State = request.State,
+                ZipCode = request.ZipCode,
+                IsDefault = request.IsDefault,
+                GeoLocation = request.GeoLocation,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+
             };
 
             _dbContext.Addresses.Add(newAddress);
@@ -85,8 +112,9 @@ namespace CafeteriaOrdering.API.Controllers
             });
         }
 
-        [HttpPut("MyAccount/UpdateAddress/{addressId}")]
-        public async Task<IActionResult> UpdateAddress(int addressId, [FromBody] IDictionary<string, object> request)
+        [Authorize("PATRON")]
+        [HttpPut("MyAccount/UpdateAddress")]
+        public async Task<IActionResult> UpdateAddress([FromQuery] int userId, [FromQuery] int addressId, [FromBody] AddressRequest request)
         {
             var address = await _dbContext.Addresses.FindAsync(addressId);
             if (address == null)
@@ -94,23 +122,27 @@ namespace CafeteriaOrdering.API.Controllers
                 return NotFound("Địa chỉ không tồn tại.");
             }
 
-            if (request.ContainsKey("addressLine")) address.AddressLine = request["addressLine"]?.ToString();
-            if (request.ContainsKey("city")) address.City = request["city"]?.ToString();
-            if (request.ContainsKey("state")) address.State = request["state"]?.ToString();
-            if (request.ContainsKey("zipCode")) address.ZipCode = request["zipCode"]?.ToString();
-            if (request.ContainsKey("isDefault") && bool.TryParse(request["isDefault"]?.ToString(), out var isDefault))
+            // Kiểm tra xem địa chỉ có thuộc về userId không
+            if (address.UserId != userId)
             {
-                if (isDefault)
-                {
-                    var existingAddresses = _dbContext.Addresses.Where(a => a.UserId == address.UserId && a.IsDefault);
-                    foreach (var addr in existingAddresses)
-                    {
-                        addr.IsDefault = false;
-                    }
-                }
-                address.IsDefault = isDefault;
+                return BadRequest("Bạn không có quyền cập nhật địa chỉ này.");
             }
 
+            address.AddressLine = request.AddressLine ?? address.AddressLine;
+            address.City = request.City ?? address.City;
+            address.State = request.State ?? address.State;
+            address.ZipCode = request.ZipCode ?? address.ZipCode;
+            address.GeoLocation = request.GeoLocation ?? address.GeoLocation;
+
+            if (request.IsDefault)
+            {
+                var existingAddresses = _dbContext.Addresses.Where(a => a.UserId == userId && a.IsDefault);
+                foreach (var addr in existingAddresses)
+                {
+                    addr.IsDefault = false;
+                }
+            }
+            address.IsDefault = request.IsDefault;
             address.UpdatedAt = DateTime.UtcNow;
 
             _dbContext.Addresses.Update(address);
@@ -119,21 +151,22 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(new { Message = "Cập nhật địa chỉ thành công.", AddressId = address.AddressId });
         }
 
-        [HttpDelete("MyAccount/DeleteAddress/{addressId}")]
-        public async Task<IActionResult> DeleteAddress(int addressId)
-        {
-            var address = await _dbContext.Addresses.FindAsync(addressId);
-            if (address == null)
-            {
-                return NotFound("Địa chỉ không tồn tại.");
-            }
+        //[HttpDelete("MyAccount/DeleteAddress/{addressId}")]
+        //public async Task<IActionResult> DeleteAddress(int addressId)
+        //{
+        //    var address = await _dbContext.Addresses.FindAsync(addressId);
+        //    if (address == null)
+        //    {
+        //        return NotFound("Địa chỉ không tồn tại.");
+        //    }
 
-            _dbContext.Addresses.Remove(address);
-            await _dbContext.SaveChangesAsync();
+        //    _dbContext.Addresses.Remove(address);
+        //    await _dbContext.SaveChangesAsync();
 
-            return Ok(new { Message = "Xóa địa chỉ thành công.", AddressId = addressId });
-        }
+        //    return Ok(new { Message = "Xóa địa chỉ thành công.", AddressId = addressId });
+        //}
 
+        [Authorize("PATRON")]
         [HttpGet("MyOrder/{userId}")]
         public async Task<IActionResult> GetMyOrders(int userId)
         {
@@ -187,15 +220,11 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(orders);
         }
 
+        [Authorize("PATRON")]
         [HttpPost("MyOrder/MakeAFeedback")]
-        public async Task<IActionResult> MakeAFeedback([FromBody] IDictionary<string, object> request)
+        public async Task<IActionResult> MakeAFeedback([FromBody] FeedbackRequest request)
         {
-            var userId = ((JsonElement)request["userId"]).GetInt32();
-            var orderId = ((JsonElement)request["orderId"]).GetInt32();
-            var rating = ((JsonElement)request["rating"]).GetInt32();
-            var comment = ((JsonElement)request["comment"]).GetString();
-
-            var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId && o.UserId == userId);
+            var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.OrderId == request.OrderId && o.UserId == request.UserId);
             if (order == null)
             {
                 return NotFound("Không tìm thấy đơn hàng hoặc đơn hàng không thuộc về user.");
@@ -203,10 +232,10 @@ namespace CafeteriaOrdering.API.Controllers
 
             var feedback = new Feedback
             {
-                UserId = userId,
-                OrderId = orderId,
-                Rating = rating,
-                Comment = comment,
+                UserId = request.UserId,
+                OrderId = request.OrderId,
+                Rating = request.Rating,
+                Comment = request.Comment,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -228,6 +257,7 @@ namespace CafeteriaOrdering.API.Controllers
             });
         }
 
+        [Authorize("PATRON")]
         [HttpGet("MyOrder/TrackOrderStatus/{orderId}")]
         public async Task<IActionResult> TrackOrderStatus(int orderId)
         {
@@ -253,54 +283,51 @@ namespace CafeteriaOrdering.API.Controllers
                 Order = order
             });
         }
+
+        [Authorize("PATRON")]
         [HttpPost("OrderAMeal")]
-        public async Task<IActionResult> CreateOrder([FromBody] IDictionary<string, object> request)
+        public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
         {
             try
             {
-                var userId = ((JsonElement)request["userId"]).GetInt32();
-                //var paymentMethod = ((JsonElement)request["paymentMethod"]).GetString();
-                var addressId = ((JsonElement)request["addressId"]).GetInt32();
+                var user = await _dbContext.Users
+                .Include(u => u.Addresses)
+                .FirstOrDefaultAsync(u => u.UserId == request.UserId);
 
-                var orderItemsElement = (JsonElement)request["orderItems"];
-                var orderItems = new List<(int itemId, int quantity)>();
-
-                foreach (var item in orderItemsElement.EnumerateArray())
+                var addressExists = user.Addresses.Any(a => a.AddressId == request.AddressId);
+                if (!addressExists)
                 {
-                    var itemId = item.GetProperty("itemId").GetInt32();
-                    var quantity = item.GetProperty("quantity").GetInt32();
-                    orderItems.Add((itemId, quantity));
+                    return BadRequest("Địa chỉ không hợp lệ hoặc không thuộc về user.");
                 }
 
                 decimal totalAmount = 0;
                 var orderItemsToAdd = new List<OrderItem>();
 
-                foreach (var (itemId, quantity) in orderItems)
+                foreach (var orderItem in request.OrderItems)
                 {
-                    var menuItem = await _dbContext.MenuItems.FindAsync(itemId);
+                    var menuItem = await _dbContext.MenuItems.FindAsync(orderItem.ItemId);
                     if (menuItem == null)
-                        return NotFound($"MenuItem with ID {itemId} not found");
+                        return NotFound($"MenuItem with ID {orderItem.ItemId} not found");
 
-                    var price = menuItem.Price * quantity;
+                    var price = menuItem.Price * orderItem.Quantity;
                     totalAmount += price;
 
                     orderItemsToAdd.Add(new OrderItem
                     {
-                        ItemId = itemId,
-                        Quantity = quantity,
+                        ItemId = orderItem.ItemId,
+                        Quantity = orderItem.Quantity,
                         Price = price
                     });
                 }
 
                 var order = new Order
                 {
-                    UserId = userId,
+                    UserId = request.UserId,
                     PaymentMethod = null,
-                    AddressId = addressId,
+                    AddressId = request.AddressId,
                     OrderDate = DateTime.UtcNow,
                     Status = "PENDING",
                     TotalAmount = totalAmount,
-
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     OrderItems = orderItemsToAdd
@@ -310,14 +337,13 @@ namespace CafeteriaOrdering.API.Controllers
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(new { orderId = order.OrderId, totalAmount });
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
 
-        [Authorize(Roles = "Manager")]
+        //[Authorize(Roles = "MANAGER")], bỏ tạm thời để gọi từ python :v, lấy cả 2.
         [HttpPut("{addressId}/geo-location")]
         public async Task<IActionResult> UpdateGeoLocation(int addressId, [FromBody] UpdateGeoLocationRequest request)
         {
@@ -333,8 +359,5 @@ namespace CafeteriaOrdering.API.Controllers
             await _dbContext.SaveChangesAsync();
             return Ok(new { message = "GeoLocation updated successfully" });
         }
-
-
-
     }
 }
