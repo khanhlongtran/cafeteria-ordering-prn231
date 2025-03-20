@@ -4,152 +4,152 @@
     ViewData["Title"] = "Orders";
 }
 
-<div class="container-fluid py-4">
+<div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 pb-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="text-primary mb-0">
-                            <i class="fas fa-shopping-bag me-2"></i>Orders Management
-                        </h6>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-filter me-1"></i>Filter
-                            </button>
-                            <button class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-download me-1"></i>Export
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body px-0 pt-0 pb-2">
-                    @if (!string.IsNullOrEmpty(Model.Message))
-                    {
-                        <div class="alert alert-@(Model.IsSuccess ? "success" : "danger") alert-dismissible fade show mx-4 mt-4" role="alert">
-                            @Model.Message
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
+            <h1 class="mb-4">Orders</h1>
+        </div>
+    </div>
 
-                    <div class="table-responsive p-0">
-                        <table class="table align-items-center mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Order ID</th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 ps-2">Customer</th>
-                                    <th class="text-center text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Status</th>
-                                    <th class="text-center text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Total Amount</th>
-                                    <th class="text-center text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Order Date</th>
-                                    <th class="text-center text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var order in Model.Orders)
+    @if (!string.IsNullOrEmpty(Model.Message))
+    {
+        <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+            @Model.Message
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        @foreach (var order in Model.Orders)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Order #@order.OrderId</h5>
+                        <div class="d-flex align-items-center">
+                            @{
+                                var statuses = new[]
                                 {
-                                    <tr class="align-middle">
-                                        <td>
-                                            <div class="d-flex px-2 py-1">
-                                                <div class="d-flex flex-column justify-content-center">
-                                                    <h6 class="mb-0 text-sm text-primary">#@order.OrderId</h6>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex flex-column">
-                                                <p class="text-sm font-weight-bold mb-0">@order.User.FullName</p>
-                                                <p class="text-sm text-secondary mb-0">
-                                                    <i class="fas fa-envelope me-1"></i>@order.User.Email
-                                                </p>
-                                            </div>
-                                        </td>
-                                        <td class="align-middle text-center text-sm">
-                                            <span class="badge bg-@(order.Status switch {
-                                                "Pending" => "warning",
-                                                "Processing" => "info",
-                                                "Completed" => "success",
-                                                "Cancelled" => "danger",
-                                                _ => "secondary"
-                                            }) px-3 py-2">@order.Status</span>
-                                        </td>
-                                        <td class="align-middle text-center">
-                                            <span class="text-sm font-weight-bold text-primary">$@order.TotalAmount.ToString("F2")</span>
-                                        </td>
-                                        <td class="align-middle text-center">
-                                            <span class="text-sm text-secondary">
-                                                <i class="far fa-calendar-alt me-1"></i>@order.OrderDate.ToString("MMM dd, yyyy")
-                                            </span>
-                                            <br>
-                                            <span class="text-xs text-muted">
-                                                <i class="far fa-clock me-1"></i>@order.OrderDate.ToString("HH:mm")
-                                            </span>
-                                        </td>
-                                        <td class="align-middle text-center">
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <button class="btn btn-link text-primary mb-0 px-2" onclick="showOrderDetails(@order.OrderId)" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="btn btn-link text-warning mb-0 px-2" onclick="showStatusModal(@order.OrderId, '@order.Status')" title="Update Status">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    new { Value = "REQUEST_DELIVERY", Text = "Request Delivery" },
+                                    new { Value = "DELIVERY_ACCEPTED", Text = "Delivery Accepted" },
+                                    new { Value = "DELIVERY_IN_PROGRESS", Text = "Delivery in Progress" },
+                                    new { Value = "COMPLETED", Text = "Completed" },
+                                    new { Value = "CANCELED", Text = "Canceled" }
+                                };
+                            }
+                            <select class="form-select form-select-sm me-2" onchange="updateOrderStatus(@order.OrderId, this.value)" style="width: auto;">
+                                <option value="" disabled selected="@(order.Status == null)">Update Status</option>
+                                @foreach (var status in statuses)
+                                {
+                                    <option value="@status.Value" selected="@(order.Status == status.Value)">@status.Text</option>
                                 }
-                            </tbody>
-                        </table>
+                            </select>
+                            <span class="badge @GetStatusBadgeClass(order.Status)">@order.Status</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Order Date:</strong>
+                                <p>@order.OrderDate.ToString("MMM dd, yyyy HH:mm")</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Total Amount:</strong>
+                                <p>$@order.TotalAmount.ToString("N2")</p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Payment Method:</strong>
+                                <p>@(order.PaymentMethod ?? "Not specified")</p>
+                            </div>
+
+                            <div class="col-md-6">
+                                <strong>Delivery Address:</strong>
+                                <p>
+                                    @(order.Address?.AddressLine ?? "No address")<br />
+                                    @(order.Address?.City ?? ""), @(order.Address?.State ?? "") @(order.Address?.ZipCode ?? "")
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="btn-group w-100">
+                            <button class="btn btn-success" onclick="viewOrderItems(@order.OrderId)">
+                                <i class="fas fa-list"></i> View Items
+                            </button>
+                            <button class="btn btn-info" onclick="trackOrder(@order.OrderId)">
+                                <i class="fas fa-truck"></i> Track Order
+                            </button>
+                            <button class="btn btn-primary" onclick="showFeedbackModal(@order.OrderId)">
+                                <i class="fas fa-star"></i> Leave Feedback
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        }
     </div>
 </div>
 
-<!-- Order Details Modal -->
-<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-primary" id="orderDetailsModalLabel">
-                    <i class="fas fa-file-alt me-2"></i>Order Details
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="orderDetailsContent">
-                    <!-- Content will be loaded dynamically -->
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Update Status Modal -->
-<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
+<!-- Track Order Modal -->
+<div class="modal fade" id="trackOrderModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-primary" id="updateStatusModalLabel">
-                    <i class="fas fa-edit me-2"></i>Update Order Status
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Track Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form method="post" asp-page-handler="UpdateStatus">
-                    <input type="hidden" id="updateOrderId" name="orderId" />
-                    <div class="mb-3">
-                        <label for="newStatus" class="form-label text-muted">New Status</label>
-                        <select class="form-select border-0 bg-light" id="newStatus" name="status" required>
-                            <option value="Pending">Pending</option>
-                            <option value="Processing">Processing</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
+                <div id="orderTimeline"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal fade" id="feedbackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Leave Feedback</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="feedbackOrderId" />
+                <div class="mb-3">
+                    <label class="form-label">Rating</label>
+                    <div class="rating">
+                        @for (int i = 5; i >= 1; i--)
+                        {
+                            <input type="radio" name="rating" value="@i" id="rating@i" />
+                            <label for="rating@i"><i class="fas fa-star"></i></label>
+                        }
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-save me-2"></i>Update Status
-                    </button>
-                </form>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Comment</label>
+                    <textarea class="form-control" id="feedbackComment" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitFeedback()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Items Modal -->
+<div class="modal fade" id="orderItemsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Order Items</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="orderItemsList"></div>
             </div>
         </div>
     </div>
@@ -157,161 +157,277 @@
 
 @section Scripts {
     <script>
-        function showOrderDetails(orderId) {
-            fetch(`?handler=OrderDetails&orderId=${orderId}`)
-                .then(response => response.json())
-                .then(order => {
-                    const content = `
-                        <div class="order-details">
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-body">
-                                            <h6 class="text-primary mb-4">
-                                                <i class="fas fa-user me-2"></i>Customer Information
-                                            </h6>
-                                            <div class="d-flex flex-column">
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">Full Name</label>
-                                                    <p class="mb-0 fw-bold">${order.user.fullName}</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">Email</label>
-                                                    <p class="mb-0 fw-bold">${order.user.email}</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">Phone</label>
-                                                    <p class="mb-0 fw-bold">${order.user.phone}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-body">
-                                            <h6 class="text-primary mb-4">
-                                                <i class="fas fa-map-marker-alt me-2"></i>Delivery Address
-                                            </h6>
-                                            <div class="d-flex flex-column">
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">Street Address</label>
-                                                    <p class="mb-0 fw-bold">${order.address.addressLine}</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">City</label>
-                                                    <p class="mb-0 fw-bold">${order.address.city}</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">State & ZIP</label>
-                                                    <p class="mb-0 fw-bold">${order.address.state} ${order.address.zipCode}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+        let trackOrderModal;
+        let feedbackModal;
+        let orderItemsModal;
 
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-body">
-                                            <h6 class="text-primary mb-4">
-                                                <i class="fas fa-shopping-cart me-2"></i>Order Items
-                                            </h6>
-                                            <div class="table-responsive">
-                                                <table class="table table-hover">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Item</th>
-                                                            <th>Type</th>
-                                                            <th class="text-center">Quantity</th>
-                                                            <th class="text-end">Price</th>
-                                                            <th class="text-end">Total</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        ${order.orderItems.map(item => `
-                                                            <tr>
-                                                                <td>
-                                                                    <div class="d-flex flex-column">
-                                                                        <span class="fw-bold">${item.item.itemName}</span>
-                                                                        <small class="text-muted">${item.item.description}</small>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <span class="badge bg-light text-dark">${item.item.itemType}</span>
-                                                                </td>
-                                                                <td class="text-center">${item.quantity}</td>
-                                                                <td class="text-end">$${item.price.toFixed(2)}</td>
-                                                                <td class="text-end">$${(item.quantity * item.price).toFixed(2)}</td>
-                                                            </tr>
-                                                        `).join('')}
-                                                    </tbody>
-                                                    <tfoot>
-                                                        <tr>
-                                                            <td colspan="4" class="text-end fw-bold">Total Amount:</td>
-                                                            <td class="text-end fw-bold text-primary">$${order.totalAmount.toFixed(2)}</td>
-                                                        </tr>
-                                                    </tfoot>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+        document.addEventListener('DOMContentLoaded', function () {
+            trackOrderModal = new bootstrap.Modal(document.getElementById('trackOrderModal'));
+            feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+            orderItemsModal = new bootstrap.Modal(document.getElementById('orderItemsModal'));
+        });
 
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-body">
-                                            <h6 class="text-primary mb-4">
-                                                <i class="fas fa-info-circle me-2"></i>Order Information
-                                            </h6>
-                                            <div class="d-flex flex-column">
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">Order ID</label>
-                                                    <p class="mb-0 fw-bold">#${order.orderId}</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">Order Date</label>
-                                                    <p class="mb-0 fw-bold">${new Date(order.orderDate).toLocaleString()}</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">Status</label>
-                                                    <p class="mb-0">
-                                                        <span class="badge bg-${order.status === 'Pending' ? 'warning' : 
-                                                                           order.status === 'Processing' ? 'info' : 
-                                                                           order.status === 'Completed' ? 'success' : 
-                                                                           'danger'}">
-                                                            ${order.status}
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted small">Payment Method</label>
-                                                    <p class="mb-0 fw-bold">${order.paymentMethod}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+        async function trackOrder(orderId) {
+            try {
+                const response = await fetch(`?handler=TrackOrder&orderId=${orderId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const data = JSON.parse(result.content);
+                    const timeline = document.getElementById('orderTimeline');
+                    
+                    // Display order items
+                    timeline.innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.map(item => `
+                                        <tr>
+                                            <td>${item.item?.itemName ?? 'Unknown Item'}</td>
+                                            <td>${item.quantity}</td>
+                                            <td>$${item.price.toFixed(2)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
                         </div>
                     `;
-                    document.getElementById('orderDetailsContent').innerHTML = content;
-                    new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
-                })
-                .catch(error => {
-                    console.error('Error fetching order details:', error);
-                    alert('Error loading order details. Please try again.');
-                });
+                    
+                    trackOrderModal.show();
+                } else {
+                    alert('Failed to track order: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while tracking the order');
+            }
         }
 
-        function showStatusModal(orderId, currentStatus) {
-            document.getElementById('updateOrderId').value = orderId;
-            document.getElementById('newStatus').value = currentStatus;
-            new bootstrap.Modal(document.getElementById('updateStatusModal')).show();
+        async function updateOrderStatus(orderId, status) {
+            try {
+                const response = await fetch(`?handler=UpdateOrderStatus&orderId=${orderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        status: status
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    const content = JSON.parse(result.content);
+                    alert(content.message || 'Order status updated successfully');
+                    window.location.reload();
+                } else {
+                    alert('Failed to update order status: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while updating the order status');
+            }
+        }
+
+        function showFeedbackModal(orderId) {
+            document.getElementById('feedbackOrderId').value = orderId;
+            feedbackModal.show();
+        }
+
+        async function submitFeedback() {
+            const orderId = document.getElementById('feedbackOrderId').value;
+            const rating = document.querySelector('input[name="rating"]:checked')?.value;
+            const comment = document.getElementById('feedbackComment').value;
+
+            if (!rating) {
+                alert('Please select a rating');
+                return;
+            }
+
+            try {
+                const response = await fetch('?handler=SubmitFeedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        rating: parseInt(rating),
+                        comment: comment
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Thank you for your feedback!');
+                    feedbackModal.hide();
+                    window.location.reload();
+                } else {
+                    alert('Failed to submit feedback: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while submitting feedback');
+            }
+        }
+
+        async function viewOrderItems(orderId) {
+            try {
+                const response = await fetch(`?handler=GetOrderItems&orderId=${orderId}`);
+                const result = await response.json();
+                
+                console.log('API Response:', result); // Debug log
+
+                if (result.success && Array.isArray(result.items)) {
+                    const orderItemsList = document.getElementById('orderItemsList');
+                    
+                    orderItemsList.innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Item Name</th>
+                                        <th>Quantity</th>
+                                        <th>Price per Item</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${result.items.map(item => `
+                                        <tr>
+                                            <td>${item.itemName}</td>
+                                            <td>${item.quantity}</td>
+                                            <td>$${(item.price / item.quantity).toFixed(2)}</td>
+                                            <td>$${item.price.toFixed(2)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Order Total:</strong></td>
+                                        <td><strong>$${result.items.reduce((sum, item) => sum + item.price, 0).toFixed(2)}</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    `;
+                    
+                    orderItemsModal.show();
+                } else {
+                    console.error('Invalid response structure:', result); // Debug log
+                    alert('Failed to load order items: ' + (result.message || 'The response format is invalid'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while loading order items');
+            }
         }
     </script>
+}
+
+@section Styles {
+    <style>
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        .badge {
+            padding: 0.5em 1em;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 30px;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #ddd;
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 3px #ddd;
+        }
+
+        .timeline-marker.active {
+            background-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-color);
+        }
+
+        .timeline-content {
+            padding: 0 20px;
+        }
+
+        .timeline-content h3 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .timeline-content p {
+            margin: 0;
+            color: #666;
+        }
+
+        .rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+
+        .rating input {
+            display: none;
+        }
+
+        .rating label {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #ddd;
+            padding: 0 0.1em;
+        }
+
+        .rating input:checked ~ label {
+            color: #ffd700;
+        }
+
+        .rating label:hover,
+        .rating label:hover ~ label {
+            color: #ffd700;
+        }
+    </style>
+}
+
+@functions {
+    private string GetStatusBadgeClass(string status)
+    {
+        return status?.ToUpper() switch
+        {
+            "REQUEST_DELIVERY" => "bg-warning",
+            "DELIVERY_ACCEPTED" => "bg-info",
+            "DELIVERY_IN_PROGRESS" => "bg-primary",
+            "COMPLETED" => "bg-success",
+            "CANCELED" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
 } 
