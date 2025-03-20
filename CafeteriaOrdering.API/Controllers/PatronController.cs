@@ -337,13 +337,13 @@ namespace CafeteriaOrdering.API.Controllers
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(new { orderId = order.OrderId, totalAmount });
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
 
+        //[Authorize(Roles = "MANAGER")], bỏ tạm thời để gọi từ python :v, lấy cả 2.
         [HttpPut("{addressId}/geo-location")]
         public async Task<IActionResult> UpdateGeoLocation(int addressId, [FromBody] UpdateGeoLocationRequest request)
         {
