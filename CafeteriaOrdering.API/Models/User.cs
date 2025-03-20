@@ -18,7 +18,7 @@ namespace CafeteriaOrdering.API.Models
         }
 
         public int UserId { get; set; }
-        public string FullName { get; set; } = null!;
+        public string? FullName { get; set; }
         public string Email { get; set; } = null!;
         public string Password { get; set; } = null!;
         public string? Phone { get; set; }
