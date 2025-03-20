@@ -27,7 +27,6 @@ namespace CafeteriaOrdering.API.Controllers
                 {
                     user_id = u.UserId,
                     user_name = u.FullName,
-                    cuisines = u.DefaultCuisine,
                     address = _context.Addresses
                         .Where(a => a.UserId == u.UserId)
                         .Select(a => new

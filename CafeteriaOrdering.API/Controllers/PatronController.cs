@@ -8,15 +8,15 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CafeteriaOrdering.API.Controllers
 {
-        [Route("api/[controller]")]
-        [ApiController]
-        public class PatronController : ControllerBase
+    [Route("api/[controller]")]
+    [ApiController]
+    public class PatronController : ControllerBase
+    {
+        private readonly CafeteriaOrderingDBContext _dbContext;
+        public PatronController(CafeteriaOrderingDBContext dbContext)
         {
-            private readonly CafeteriaOrderingDBContext _dbContext;
-            public PatronController(CafeteriaOrderingDBContext dbContext)
-            {
-                _dbContext = dbContext;
-            }
+            _dbContext = dbContext;
+        }
 
         [Authorize("PATRON")]
         [HttpPut("MyAccount/ChangeDefaultCuisine/{userId}")]
@@ -35,7 +35,7 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok("Món ăn mặc định đã được cập nhật thành công.");
         }
 
-        [HttpGet("GetUserAddresses/{userId}")]
+        [HttpGet("GetUserAddressesAndDefaultCuisine/{userId}")]
         public async Task<IActionResult> GetUserAddresses(int userId)
         {
             var user = await _dbContext.Users
@@ -49,15 +49,17 @@ namespace CafeteriaOrdering.API.Controllers
 
             var addresses = user.Addresses.Select(a => new
             {
+
                 a.AddressId,
                 a.AddressLine,
                 a.City,
+                a.User.DefaultCuisine,
                 a.State,
                 a.ZipCode,
                 a.IsDefault,
                 a.GeoLocation,
                 a.CreatedAt,
-                a.UpdatedAt
+                a.UpdatedAt,
             }).ToList();
 
             return Ok(addresses);
