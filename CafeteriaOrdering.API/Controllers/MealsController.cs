@@ -31,7 +31,7 @@ namespace CafeteriaOrdering.API.Controllers
                         .Where(a => a.UserId == u.UserId)
                         .Select(a => new
                         {
-                            //geoLocation = a.GeoLocation,
+                            geoLocation = a.GeoLocation,
                             image = a.Image
                         })
                         .FirstOrDefault(),
