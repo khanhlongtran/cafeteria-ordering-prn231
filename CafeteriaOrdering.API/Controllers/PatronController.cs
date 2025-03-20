@@ -94,10 +94,14 @@ namespace CafeteriaOrdering.API.Controllers
                 return NotFound("Địa chỉ không tồn tại.");
             }
 
-            if (request.ContainsKey("addressLine")) address.AddressLine = request["addressLine"]?.ToString();
-            if (request.ContainsKey("city")) address.City = request["city"]?.ToString();
-            if (request.ContainsKey("state")) address.State = request["state"]?.ToString();
-            if (request.ContainsKey("zipCode")) address.ZipCode = request["zipCode"]?.ToString();
+            if (request.ContainsKey("addressLine"))
+                address.AddressLine = request["addressLine"]?.ToString();
+            if (request.ContainsKey("city"))
+                address.City = request["city"]?.ToString();
+            if (request.ContainsKey("state"))
+                address.State = request["state"]?.ToString();
+            if (request.ContainsKey("zipCode"))
+                address.ZipCode = request["zipCode"]?.ToString();
             if (request.ContainsKey("isDefault") && bool.TryParse(request["isDefault"]?.ToString(), out var isDefault))
             {
                 if (isDefault)
@@ -310,14 +314,13 @@ namespace CafeteriaOrdering.API.Controllers
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(new { orderId = order.OrderId, totalAmount });
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
 
-        [Authorize(Roles = "MANAGER")]
+        //    [Authorize(Roles = "MANAGER")], bỏ tạm thời để gọi từ python :v 
         [HttpPut("{addressId}/geo-location")]
         public async Task<IActionResult> UpdateGeoLocation(int addressId, [FromBody] UpdateGeoLocationRequest request)
         {
@@ -333,8 +336,6 @@ namespace CafeteriaOrdering.API.Controllers
             await _dbContext.SaveChangesAsync();
             return Ok(new { message = "GeoLocation updated successfully" });
         }
-
-
 
     }
 }

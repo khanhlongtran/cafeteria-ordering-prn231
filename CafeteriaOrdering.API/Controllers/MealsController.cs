@@ -22,7 +22,7 @@ namespace CafeteriaOrdering.API.Controllers
         public async Task<IActionResult> GetAllManagersandGeoLocation()
         {
             var result = await _context.Users
-                .Where(u => u.Role == "manager")
+                .Where(u => u.Role.ToLower() == "manager")
                 .Select(u => new
                 {
                     user_id = u.UserId,
@@ -53,15 +53,5 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(result);
         }
 
-
-
-        // Hàm kiểm tra vị trí gần (có thể dùng thư viện tính khoảng cách nếu cần)
-        private bool IsNearby(string userGeoLocation, string requestGeoLocation)
-        {
-            // Nếu cần so sánh chính xác theo tọa độ:
-            return userGeoLocation == requestGeoLocation;
-
-            // Nếu cần so sánh theo khoảng cách, có thể dùng Haversine Formula hoặc thư viện hỗ trợ.
-        }
     }
-    }
+}
