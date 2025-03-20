@@ -73,9 +73,15 @@
                                 <button class="btn btn-sm btn-outline-primary" onclick="showEditMenuModal(@menu.MenuId)">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteMenu(@menu.MenuId)">
+                                <!-- <button class="btn btn-sm btn-outline-danger" onclick="deleteMenu(@menu.MenuId)">
                                     <i class="fas fa-trash"></i>
-                                </button>
+                                </button> -->
+                                <form method="post" onsubmit="return confirmDelete()">
+                                    <input type="hidden" name="menuId" value="@menu.MenuId" />
+                                    <button class="btn btn-sm btn-outline-danger" type="submit" asp-page-handler="DeleteMenu" class="btn btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -239,7 +245,8 @@
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="isStatus" checked />
+                            <input type="checkbox" class="form-check-input" name="isStatus" value="true" checked />
+                            <input type="hidden" name="isStatus" value="false" />
                             <label class="form-check-label">Active</label>
                         </div>
                     </div>
@@ -289,7 +296,8 @@
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="isStatus" id="editItemStatus" />
+                            <input type="checkbox" class="form-check-input" name="isStatus" id="editItemStatus" value="true" />
+                            <input type="hidden" name="isStatus" value="false" />
                             <label class="form-check-label">Active</label>
                         </div>
                     </div>
@@ -337,6 +345,10 @@
             createMenuModal.show();
         }
 
+        function confirmDelete() {
+            return confirm("Are you sure you want to delete this menu?");
+        }
+
         async function showEditMenuModal(menuId) {
             try {
                 const response = await fetch(`?handler=GetMenu&menuId=${menuId}`);
@@ -357,61 +369,107 @@
         }
 
         async function deleteMenu(menuId) {
-            if (confirm('Are you sure you want to deactivate this menu? This will hide it from customers but keep the data.')) {
-                try {
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = window.location.pathname;
-                    form.innerHTML = `
-                        <input type="hidden" name="handler" value="DeleteMenu" />
-                        <input type="hidden" name="menuId" value="${menuId}" />
-                    `;
-                    document.body.appendChild(form);
-                    form.submit();
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('An error occurred while deactivating the menu');
+            if (!confirm("Are you sure you want to delete this menu?")) return;
+
+            try {
+                const response = await fetch(window.location.pathname + "?handler=DeleteMenu", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `menuId=${menuId}`
+                });
+
+                if (response.ok) {
+                    alert("Menu deleted successfully!");
+                    document.getElementById(`menu-${menuId}`).remove(); // Remove row from table
+                } else {
+                    const errorText = await response.text();
+                    alert("Failed to delete menu: " + errorText);
                 }
+            } catch (error) {
+                console.log("Error:", error);
+                alert("An error occurred while deleting the menu.");
             }
+                
+                // try {
+                //     const form = document.createElement('form');
+                //     form.method = 'POST';
+                //     form.action = window.location.pathname;
+                //     form.innerHTML = `
+                //         <input type="hidden" name="handler" value="OnPostDeleteMenu" />
+                //         <input type="hidden" name="menuId" value="${menuId}" />
+                //     `;
+                //     document.body.appendChild(form);
+                //     form.submit();
+                // } catch (error) {
+                //     console.error('Error:', error);
+                //     alert('An error occurred while deactivating the menu');
+                // }
         }
 
         function viewMenuItems(menuId) {
             fetch(`?handler=GetMenuItems&menuId=${menuId}`)
-                .then(response => response.json())
+                .then(async response => {
+                    try {
+                        const data = await response.json();
+                        return data;
+                    } catch (error) {
+                        return []; // Return empty array if response cannot be parsed as JSON
+                    }
+                })
                 .then(items => {
                     const tbody = document.getElementById('menuItemsTableBody');
                     tbody.innerHTML = '';
                     
-                    items.forEach(item => {
+                    if (items && items.length > 0) {
+                        items.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${item.itemName}</td>
+                                <td>${item.description || ''}</td>
+                                <td>$${item.price.toFixed(2)}</td>
+                                <td>${item.itemType}</td>
+                                <td>
+                                    <span class="badge ${item.isStatus ? 'bg-success' : 'bg-danger'}">
+                                        ${item.isStatus ? 'Active' : 'Inactive'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="showEditMenuItemModal(${item.itemId})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMenuItem(${item.itemId})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        // Add a "no items" message row
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td>${item.itemName}</td>
-                            <td>${item.description || ''}</td>
-                            <td>$${item.price.toFixed(2)}</td>
-                            <td>${item.itemType}</td>
-                            <td>
-                                <span class="badge ${item.isStatus ? 'bg-success' : 'bg-danger'}">
-                                    ${item.isStatus ? 'Active' : 'Inactive'}
-                                </span>
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="showEditMenuItemModal(${item.itemId})">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteMenuItem(${item.itemId})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
+                            <td colspan="6" class="text-center">No menu items found. Click "Add New Item" to create one.</td>
                         `;
                         tbody.appendChild(row);
-                    });
+                    }
 
                     document.getElementById('createItemMenuId').value = menuId;
                     menuItemsModal.show();
                 })
                 .catch(error => {
-                    console.error('Error fetching menu items:', error);
-                    alert('Failed to load menu items');
+                    // Even if there's an error, show the modal with empty table
+                    const tbody = document.getElementById('menuItemsTableBody');
+                    tbody.innerHTML = '';
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td colspan="6" class="text-center">No menu items found. Click "Add New Item" to create one.</td>
+                    `;
+                    tbody.appendChild(row);
+                    document.getElementById('createItemMenuId').value = menuId;
+                    menuItemsModal.show();
+                    
+                    console.error('Error:', error);
                 });
         }
 
@@ -439,28 +497,24 @@
         }
 
         async function deleteMenuItem(itemId) {
-            if (confirm('Are you sure you want to delete this menu item?')) {
+            if (confirm("Are you sure you want to delete this menu item?")) {
                 try {
-                    const response = await fetch('?handler=DeleteMenuItem', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
+                    const response = await fetch(`?handler=DeleteMenuItem&itemId=${itemId}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
                         body: `itemId=${itemId}`
                     });
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        showSuccessToast('Menu item deleted successfully');
-                        // Reload the page to refresh the menu items list
-                        window.location.reload();
+                    const result = await response.json();
+                    if (result.success) {
+                        alert("Menu item deleted successfully!");
+                        viewMenuItems(); // Reload the list after deletion
                     } else {
-                        const error = await response.text();
-                        alert('Failed to delete menu item: ' + error);
+                        alert("Failed to delete menu item: " + result.message);
                     }
                 } catch (error) {
-                    console.error('Error:', error);
-                    alert('An error occurred while deleting the menu item');
+                    console.error("Error:", error);
+                    alert("An error occurred while deleting the menu item.");
                 }
             }
         }

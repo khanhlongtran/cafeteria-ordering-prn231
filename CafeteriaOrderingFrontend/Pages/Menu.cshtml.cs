@@ -305,7 +305,7 @@ namespace CafeteriaOrderingFrontend.Pages
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostDeleteMenuAsync([FromForm] int menuId)
+        public async Task<IActionResult> OnPostDeleteMenuAsync(int menuId)
         {
             try
             {
@@ -347,7 +347,7 @@ namespace CafeteriaOrderingFrontend.Pages
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostDeleteMenuItemAsync([FromForm] int itemId)
+        public async Task<IActionResult> OnPostDeleteMenuItemAsync([FromQuery] int itemId)
         {
             try
             {
