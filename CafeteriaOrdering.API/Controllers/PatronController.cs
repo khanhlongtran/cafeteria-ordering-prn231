@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CafeteriaOrdering.API.Controllers
 {
-        //[Authorize("PATRON")]
         [Route("api/[controller]")]
         [ApiController]
         public class PatronController : ControllerBase
@@ -18,6 +17,8 @@ namespace CafeteriaOrdering.API.Controllers
             {
                 _dbContext = dbContext;
             }
+
+        [Authorize("PATRON")]
         [HttpPut("MyAccount/ChangeDefaultCuisine/{userId}")]
         public async Task<IActionResult> ChangeDefaultCuisine(int userId, [FromBody] string defaultCuisine)
         {
@@ -62,6 +63,7 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(addresses);
         }
 
+        [Authorize("PATRON")]
         [HttpPost("MyAccount/ChangeAddress/{userId}")]
         public async Task<IActionResult> ChangeAddress(int userId, [FromBody] AddressRequest request)
         {
@@ -110,6 +112,7 @@ namespace CafeteriaOrdering.API.Controllers
             });
         }
 
+        [Authorize("PATRON")]
         [HttpPut("MyAccount/UpdateAddress")]
         public async Task<IActionResult> UpdateAddress([FromQuery] int userId, [FromQuery] int addressId, [FromBody] AddressRequest request)
         {
@@ -163,6 +166,7 @@ namespace CafeteriaOrdering.API.Controllers
         //    return Ok(new { Message = "Xóa địa chỉ thành công.", AddressId = addressId });
         //}
 
+        [Authorize("PATRON")]
         [HttpGet("MyOrder/{userId}")]
         public async Task<IActionResult> GetMyOrders(int userId)
         {
@@ -216,6 +220,7 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(orders);
         }
 
+        [Authorize("PATRON")]
         [HttpPost("MyOrder/MakeAFeedback")]
         public async Task<IActionResult> MakeAFeedback([FromBody] FeedbackRequest request)
         {
@@ -252,6 +257,7 @@ namespace CafeteriaOrdering.API.Controllers
             });
         }
 
+        [Authorize("PATRON")]
         [HttpGet("MyOrder/TrackOrderStatus/{orderId}")]
         public async Task<IActionResult> TrackOrderStatus(int orderId)
         {
@@ -278,6 +284,7 @@ namespace CafeteriaOrdering.API.Controllers
             });
         }
 
+        [Authorize("PATRON")]
         [HttpPost("OrderAMeal")]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
         {
@@ -337,7 +344,6 @@ namespace CafeteriaOrdering.API.Controllers
             }
         }
 
-        [Authorize(Roles = "MANAGER, PATRON")]
         [HttpPut("{addressId}/geo-location")]
         public async Task<IActionResult> UpdateGeoLocation(int addressId, [FromBody] UpdateGeoLocationRequest request)
         {
