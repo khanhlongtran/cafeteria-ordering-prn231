@@ -361,5 +361,78 @@ namespace CafeteriaOrdering.API.Controllers
             await _dbContext.SaveChangesAsync();
             return Ok(new { message = "GeoLocation updated successfully" });
         }
+
+        [HttpGet("item/{itemId}")]
+        public async Task<IActionResult> GetMenuItemById(int itemId)
+        {
+            var menuItem = await _dbContext.MenuItems
+                .Include(m => m.Menu)
+                .Where(m => m.ItemId == itemId)
+                .Select(m => new
+                {
+                    ItemId = m.ItemId,
+                    ItemName = m.ItemName,
+                    Description = m.Description,
+                    Price = m.Price,
+                    Type = m.ItemType,
+                    Status = m.IsStatus,
+                    Image = m.Image
+                })
+                .FirstOrDefaultAsync();
+
+            if (menuItem == null)
+            {
+                return NotFound(new { message = "Item not found" });
+            }
+
+            return Ok(menuItem);
+        }
+
+        [HttpGet("restaurant/{addressId}")]
+        public async Task<IActionResult> GetAddresses(int addressId)
+        {
+                var restaurant = await _dbContext.Addresses
+            .Include(a => a.User)
+            .ThenInclude(u => u.Menus)
+            .ThenInclude(m => m.MenuItems)
+            .Where(a => a.AddressId == addressId)
+            .Select(a => new
+            {
+                AddressId = a.AddressId,
+                UserId = a.UserId,
+                FullName = a.User.FullName,
+                AddressLine = a.AddressLine,
+                City = a.City,
+                State = a.State,
+                ZipCode = a.ZipCode,
+                GeoLocation = a.GeoLocation,
+                Image = a.Image,
+                Phone = a.User.Phone,
+                Menus = a.User.Menus.Select(m => new
+                {
+                    MenuId = m.MenuId,
+                    MenuName = m.MenuName,
+                    IsStatus = m.IsStatus,
+                    MenuItems = m.MenuItems.Select(mi => new
+                    {
+                        ItemId = mi.ItemId,
+                        ItemName = mi.ItemName,
+                        Price = mi.Price,
+                        Description = mi.Description,
+                        ItemType = mi.ItemType,
+                        IsStatus = mi.IsStatus,
+                        Image = mi.Image
+                    }).ToList()
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
+
+                if (restaurant == null)
+                {
+                    return NotFound(new { message = "Restaurant not found" });
+                }
+
+                return Ok(restaurant);
+            }
     }
 }
