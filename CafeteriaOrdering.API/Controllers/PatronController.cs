@@ -361,5 +361,31 @@ namespace CafeteriaOrdering.API.Controllers
             await _dbContext.SaveChangesAsync();
             return Ok(new { message = "GeoLocation updated successfully" });
         }
+
+        [HttpGet("item/{itemId}")]
+        public async Task<IActionResult> GetMenuItemById(int itemId)
+        {
+            var menuItem = await _dbContext.MenuItems
+                .Include(m => m.Menu)
+                .Where(m => m.ItemId == itemId)
+                .Select(m => new
+                {
+                    ItemId = m.ItemId,
+                    ItemName = m.ItemName,
+                    Description = m.Description,
+                    Price = m.Price,
+                    Type = m.ItemType,
+                    Status = m.IsStatus,
+                    Image = m.Image
+                })
+                .FirstOrDefaultAsync();
+
+            if (menuItem == null)
+            {
+                return NotFound(new { message = "Item not found" });
+            }
+
+            return Ok(menuItem);
+        }
     }
 }
