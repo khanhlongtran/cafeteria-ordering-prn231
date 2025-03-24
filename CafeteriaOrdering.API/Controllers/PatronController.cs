@@ -387,5 +387,52 @@ namespace CafeteriaOrdering.API.Controllers
 
             return Ok(menuItem);
         }
+
+        [HttpGet("restaurant/{addressId}")]
+        public async Task<IActionResult> GetAddresses(int addressId)
+        {
+                var restaurant = await _dbContext.Addresses
+            .Include(a => a.User)
+            .ThenInclude(u => u.Menus)
+            .ThenInclude(m => m.MenuItems)
+            .Where(a => a.AddressId == addressId)
+            .Select(a => new
+            {
+                AddressId = a.AddressId,
+                UserId = a.UserId,
+                FullName = a.User.FullName,
+                AddressLine = a.AddressLine,
+                City = a.City,
+                State = a.State,
+                ZipCode = a.ZipCode,
+                GeoLocation = a.GeoLocation,
+                Image = a.Image,
+                Phone = a.User.Phone,
+                Menus = a.User.Menus.Select(m => new
+                {
+                    MenuId = m.MenuId,
+                    MenuName = m.MenuName,
+                    IsStatus = m.IsStatus,
+                    MenuItems = m.MenuItems.Select(mi => new
+                    {
+                        ItemId = mi.ItemId,
+                        ItemName = mi.ItemName,
+                        Price = mi.Price,
+                        Description = mi.Description,
+                        ItemType = mi.ItemType,
+                        IsStatus = mi.IsStatus,
+                        Image = mi.Image
+                    }).ToList()
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
+
+                if (restaurant == null)
+                {
+                    return NotFound(new { message = "Restaurant not found" });
+                }
+
+                return Ok(restaurant);
+            }
     }
 }
