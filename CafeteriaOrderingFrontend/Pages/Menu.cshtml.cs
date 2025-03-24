@@ -9,6 +9,8 @@ using CafeteriaOrdering.API.Models;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace CafeteriaOrderingFrontend.Pages
 {
@@ -64,8 +66,32 @@ namespace CafeteriaOrderingFrontend.Pages
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Menus = JsonSerializer.Deserialize<List<Menu>>(content, _jsonOptions);
-                    return Page();
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        ReferenceHandler = ReferenceHandler.Preserve,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
+                    
+                    // Parse the root object to get the $values array
+                    using var doc = JsonDocument.Parse(content);
+                    var root = doc.RootElement;
+                    var values = root.GetProperty("$values");
+                    
+                    // Deserialize the $values array into List<Menu>
+                    var menus = JsonSerializer.Deserialize<List<Menu>>(values.GetRawText(), options);
+                    if (menus != null)
+                    {
+                        Menus = menus;
+                        return Page();
+                    }
+                    else
+                    {
+                        Message = "No menus found";
+                        IsSuccess = false;
+                        return Page();
+                    }
                 }
                 else
                 {
@@ -141,8 +167,22 @@ namespace CafeteriaOrderingFrontend.Pages
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var items = JsonSerializer.Deserialize<List<MenuItem>>(content, _jsonOptions);
-                    return new JsonResult(items, _jsonOptions);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        ReferenceHandler = ReferenceHandler.Preserve,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
+                    
+                    // Parse the root object to get the $values array
+                    using var doc = JsonDocument.Parse(content);
+                    var root = doc.RootElement;
+                    var values = root.GetProperty("$values");
+                    
+                    // Deserialize the $values array into List<MenuItem>
+                    var items = JsonSerializer.Deserialize<List<MenuItem>>(values.GetRawText(), options);
+                    return new JsonResult(items, options);
                 }
                 return new NotFoundResult();
             }
@@ -174,8 +214,32 @@ namespace CafeteriaOrderingFrontend.Pages
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var item = JsonSerializer.Deserialize<MenuItem>(content, _jsonOptions);
-                    return new JsonResult(item, _jsonOptions);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        ReferenceHandler = ReferenceHandler.Preserve,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
+                    
+                    // Parse the root object to get the $values array
+                    using var doc = JsonDocument.Parse(content);
+                    var root = doc.RootElement;
+                    
+                    // If the response is a single item, it won't have $values
+                    if (root.TryGetProperty("$values", out var values))
+                    {
+                        // If it's an array, get the first item
+                        var items = JsonSerializer.Deserialize<List<MenuItem>>(values.GetRawText(), options);
+                        var item = items?.FirstOrDefault();
+                        return new JsonResult(item, options);
+                    }
+                    else
+                    {
+                        // If it's a single item, deserialize directly
+                        var item = JsonSerializer.Deserialize<MenuItem>(content, options);
+                        return new JsonResult(item, options);
+                    }
                 }
                 return new NotFoundResult();
             }

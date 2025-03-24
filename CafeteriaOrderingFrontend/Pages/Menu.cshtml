@@ -411,8 +411,10 @@
                 .then(async response => {
                     try {
                         const data = await response.json();
+                        console.log('Menu items data:', data); // Add logging
                         return data;
                     } catch (error) {
+                        console.error('Error parsing menu items:', error); // Add error logging
                         return []; // Return empty array if response cannot be parsed as JSON
                     }
                 })
@@ -424,10 +426,10 @@
                         items.forEach(item => {
                             const row = document.createElement('tr');
                             row.innerHTML = `
-                                <td>${item.itemName}</td>
+                                <td>${item.itemName || ''}</td>
                                 <td>${item.description || ''}</td>
-                                <td>$${item.price.toFixed(2)}</td>
-                                <td>${item.itemType}</td>
+                                <td>$${(item.price || 0).toFixed(2)}</td>
+                                <td>${item.itemType || ''}</td>
                                 <td>
                                     <span class="badge ${item.isStatus ? 'bg-success' : 'bg-danger'}">
                                         ${item.isStatus ? 'Active' : 'Inactive'}
@@ -437,7 +439,6 @@
                                     <button class="btn btn-sm btn-outline-primary" onclick="showEditMenuItemModal(${item.itemId})">
                                         <i class="fas fa-edit"></i>
                                     </button>
-
                                     <button class="btn btn-sm btn-outline-danger" onclick="deleteMenuItem(${item.itemId})">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -458,18 +459,17 @@
                     menuItemsModal.show();
                 })
                 .catch(error => {
+                    console.error('Error fetching menu items:', error); // Add error logging
                     // Even if there's an error, show the modal with empty table
                     const tbody = document.getElementById('menuItemsTableBody');
                     tbody.innerHTML = '';
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td colspan="6" class="text-center">No menu items found. Click "Add New Item" to create one.</td>
+                        <td colspan="6" class="text-center">Error loading menu items. Please try again.</td>
                     `;
                     tbody.appendChild(row);
                     document.getElementById('createItemMenuId').value = menuId;
                     menuItemsModal.show();
-                    
-                    console.error('Error:', error);
                 });
         }
 
