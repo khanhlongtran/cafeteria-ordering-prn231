@@ -370,6 +370,7 @@ namespace CafeteriaOrdering.API.Controllers
                 .Where(m => m.ItemId == itemId)
                 .Select(m => new
                 {
+                    ItemId = m.ItemId,
                     ItemName = m.ItemName,
                     Description = m.Description,
                     Price = m.Price,
