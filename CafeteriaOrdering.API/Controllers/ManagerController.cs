@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CafeteriaOrdering.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using CafeteriaOrdering.API.DTO;
+using CafeteriaOrdering.API.Constants;
 
 namespace ManagerAPI.Controllers
 {
@@ -362,6 +363,15 @@ namespace ManagerAPI.Controllers
                 return NotFound(new { message = "Order not found" });
             }
 
+            if (request.Status == OrderConstants.OrderStatus.REQUEST_DELIVERY.ToString())
+            {
+                order.Status = OrderConstants.OrderStatus.DELIVERY_ACCEPTED.ToString();
+
+                // Chèn vào bảng Deliveries
+                var delivery = new Delivery { OrderId = orderId };
+                _context.Deliveries.Add(delivery);
+            }
+
             order.Status = request.Status;
             order.UpdatedAt = DateTime.UtcNow;
 
@@ -369,13 +379,52 @@ namespace ManagerAPI.Controllers
 
             return Ok(new { message = "Order status updated successfully" });
         }
+
+
+        // Model cho request body
+        public class UpdateStatusRequest
+        {
+            public string Status { get; set; } = null!;
+        }
+
+
+
+        [HttpGet("GetOrdersByManager/{managerId}")]
+        public IActionResult GetOrdersByManager(int managerId)
+        {
+            var orders = _context.Orders
+                .Where(o => o.OrderItems.Any(oi => oi.Item.Menu.ManagerId == managerId))
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Item)
+                .ToList();
+
+            if (!orders.Any())
+            {
+                return NotFound("No orders found for this manager.");
+            }
+
+            return Ok(orders);
+        }
+
+
+
+        [HttpGet("by-manager/{managerId}")]
+        public IActionResult GetMenusByManager(int managerId)
+        {
+            var menus = _context.Menus
+                .Where(m => m.ManagerId == managerId)
+                .Include(m => m.MenuItems)
+                .ToList();
+
+            if (!menus.Any())
+            {
+                return NotFound("No menus found for this manager.");
+            }
+
+            return Ok(menus);
+        }
+
     }
-
-    // Model cho request body
-    public class UpdateStatusRequest
-    {
-        public string Status { get; set; } = null!;
-    }
-
-
 }
+
+

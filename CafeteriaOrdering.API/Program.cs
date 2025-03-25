@@ -70,6 +70,11 @@ namespace CafeteriaOrdering.API
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
+            app.UseCors(policy =>
+    policy.AllowAnyOrigin()
+          .AllowAnyMethod()
+          .AllowAnyHeader());
+
 
             // 🔥 Sử dụng scope để lấy Scoped Services
             using (var scope = app.Services.CreateScope())
@@ -90,7 +95,7 @@ namespace CafeteriaOrdering.API
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
+            app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
 
