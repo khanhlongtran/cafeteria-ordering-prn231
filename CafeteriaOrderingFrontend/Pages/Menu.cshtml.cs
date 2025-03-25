@@ -10,11 +10,10 @@ using Microsoft.Extensions.Configuration;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization;
 
 namespace CafeteriaOrderingFrontend.Pages
 {
-    public class MenuModel : PageModel
+    public class MenuModel : BasePageModel
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
@@ -30,6 +29,7 @@ namespace CafeteriaOrderingFrontend.Pages
         public Menu EditingMenu { get; set; }
         public string Message { get; set; }
         public bool IsSuccess { get; set; }
+        public string? ErrorMessage { get; set; }
 
         public MenuModel(HttpClient httpClient, IConfiguration configuration, ILogger<MenuModel> logger)
         {
@@ -46,23 +46,27 @@ namespace CafeteriaOrderingFrontend.Pages
             };
         }
 
-        public async Task<IActionResult> OnGetAsync()
+        public override async Task<IActionResult> OnGetAsync()
         {
+            // First, call the base class's OnGet to check authentication
+            var baseResult = await base.OnGetAsync();
+            if (baseResult is RedirectToPageResult)
+            {
+                return baseResult;
+            }
+
             try
             {
-                _logger.LogInformation("=== Starting Get Menus API Call ===");
-                var url = $"{_apiBaseUrl}/api/Manager/ViewMenu";
-                
-                _logger.LogInformation("Request URL: {Url}", url);
-                _logger.LogInformation("Request Method: GET");
-                
-                var response = await _httpClient.GetAsync(url);
+                var token = HttpContext.Session.GetString("Token");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+                var apiUrl = $"{_apiBaseUrl}/api/Manager/ViewMenu";
+                _logger.LogInformation("Requesting menus from: {Url}", apiUrl);
+
+                var response = await _httpClient.GetAsync(apiUrl);
                 var content = await response.Content.ReadAsStringAsync();
-                
-                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
-                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
-                _logger.LogInformation("Response Content: {Content}", content);
-                _logger.LogInformation("=== End Get Menus API Call ===");
+                _logger.LogInformation("Response status: {StatusCode}, Content: {Content}", response.StatusCode, content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -73,40 +77,28 @@ namespace CafeteriaOrderingFrontend.Pages
                         ReferenceHandler = ReferenceHandler.Preserve,
                         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                     };
-                    
+
                     // Parse the root object to get the $values array
                     using var doc = JsonDocument.Parse(content);
                     var root = doc.RootElement;
                     var values = root.GetProperty("$values");
                     
-                    // Deserialize the $values array into List<Menu>
-                    var menus = JsonSerializer.Deserialize<List<Menu>>(values.GetRawText(), options);
-                    if (menus != null)
-                    {
-                        Menus = menus;
-                        return Page();
-                    }
-                    else
-                    {
-                        Message = "No menus found";
-                        IsSuccess = false;
-                        return Page();
-                    }
+                    Menus = JsonSerializer.Deserialize<List<Menu>>(values.GetRawText(), options) ?? new List<Menu>();
+                    _logger.LogInformation("Successfully deserialized {Count} menus", Menus.Count);
                 }
                 else
                 {
-                    Message = "Failed to load menus";
-                    IsSuccess = false;
-                    return Page();
+                    ErrorMessage = "Failed to load menus. Please try again later.";
+                    _logger.LogError("Failed to load menus. Status code: {StatusCode}, Content: {Content}", response.StatusCode, content);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching menus");
-                Message = $"Error: {ex.Message}";
-                IsSuccess = false;
-                return Page();
+                ErrorMessage = "An error occurred while loading menus.";
+                _logger.LogError(ex, "Error loading menus");
             }
+
+            return Page();
         }
 
         public async Task<IActionResult> OnGetGetMenuAsync(int menuId)
@@ -150,20 +142,16 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
-                _logger.LogInformation("=== Starting Get Menu Items API Call ===");
-                var url = $"{_apiBaseUrl}/api/Manager/ViewMenuItems/{menuId}";
-                
-                _logger.LogInformation("Request URL: {Url}", url);
-                _logger.LogInformation("Request Method: GET");
-                _logger.LogInformation("Request Data: MenuId={MenuId}", menuId);
+                var token = HttpContext.Session.GetString("Token");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-                var response = await _httpClient.GetAsync(url);
+                var apiUrl = $"{_apiBaseUrl}/api/Manager/ViewMenuItem/{menuId}";
+                _logger.LogInformation("Requesting menu items for menu {MenuId} from: {Url}", menuId, apiUrl);
+
+                var response = await _httpClient.GetAsync(apiUrl);
                 var content = await response.Content.ReadAsStringAsync();
-                
-                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
-                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
-                _logger.LogInformation("Response Content: {Content}", content);
-                _logger.LogInformation("=== End Get Menu Items API Call ===");
+                _logger.LogInformation("Response status: {StatusCode}, Content: {Content}", response.StatusCode, content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -174,22 +162,27 @@ namespace CafeteriaOrderingFrontend.Pages
                         ReferenceHandler = ReferenceHandler.Preserve,
                         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                     };
-                    
+
                     // Parse the root object to get the $values array
                     using var doc = JsonDocument.Parse(content);
                     var root = doc.RootElement;
                     var values = root.GetProperty("$values");
                     
-                    // Deserialize the $values array into List<MenuItem>
-                    var items = JsonSerializer.Deserialize<List<MenuItem>>(values.GetRawText(), options);
-                    return new JsonResult(items, options);
+                    var menuItems = JsonSerializer.Deserialize<List<MenuItem>>(values.GetRawText(), options) ?? new List<MenuItem>();
+                    _logger.LogInformation("Successfully deserialized {Count} menu items", menuItems.Count);
+
+                    return new JsonResult(menuItems, options);
                 }
-                return new NotFoundResult();
+                else
+                {
+                    _logger.LogError("Failed to load menu items. Status code: {StatusCode}, Content: {Content}", response.StatusCode, content);
+                    return new JsonResult(new { error = "Failed to load menu items" }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching menu items for menu {MenuId}", menuId);
-                return new StatusCodeResult(500);
+                _logger.LogError(ex, "Error loading menu items for menu {MenuId}", menuId);
+                return new JsonResult(new { error = "An error occurred while loading menu items" }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
             }
         }
 
