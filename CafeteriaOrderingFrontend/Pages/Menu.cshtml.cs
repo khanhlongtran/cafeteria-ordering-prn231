@@ -20,6 +20,8 @@ namespace CafeteriaOrderingFrontend.Pages
         private readonly string _apiBaseUrl;
         private readonly ILogger<MenuModel> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
+        private string? _token { get; set; }
+        private string? _userId { get; set; }
 
         [BindProperty]
         public List<Menu> Menus { get; set; } = new();
@@ -55,13 +57,17 @@ namespace CafeteriaOrderingFrontend.Pages
                 return baseResult;
             }
 
+            _token = HttpContext.Session.GetString("Token");
+            _userId = HttpContext.Session.GetString("UserId");
+
             try
             {
-                var token = HttpContext.Session.GetString("Token");
+                // var token = HttpContext.Session.GetString("Token");
                 _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
+                // _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");
 
-                var apiUrl = $"{_apiBaseUrl}/api/Manager/ViewMenu";
+                var apiUrl = $"{_apiBaseUrl}/api/Manager/GetMenusByManager/{_userId}";
                 _logger.LogInformation("Requesting menus from: {Url}", apiUrl);
 
                 var response = await _httpClient.GetAsync(apiUrl);
@@ -79,11 +85,11 @@ namespace CafeteriaOrderingFrontend.Pages
                     };
 
                     // Parse the root object to get the $values array
-                    using var doc = JsonDocument.Parse(content);
-                    var root = doc.RootElement;
-                    var values = root.GetProperty("$values");
+                    // using var doc = JsonDocument.Parse(content);
+                    // var root = doc.RootElement;
+                    // var values = root.GetProperty("$values");
                     
-                    Menus = JsonSerializer.Deserialize<List<Menu>>(values.GetRawText(), options) ?? new List<Menu>();
+                    Menus = JsonSerializer.Deserialize<List<Menu>>(content, options) ?? new List<Menu>();
                     _logger.LogInformation("Successfully deserialized {Count} menus", Menus.Count);
                 }
                 else
@@ -105,14 +111,20 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
+                _token = HttpContext.Session.GetString("Token");
+                _userId = HttpContext.Session.GetString("UserId");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
+
                 _logger.LogInformation("=== Starting Get Menu API Call ===");
                 var url = $"{_apiBaseUrl}/api/Manager/ViewMenu";
+                var apiUrl = $"{_apiBaseUrl}/api/Manager/GetMenusByManager/{_userId}";
                 
-                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request URL: {Url}", apiUrl);
                 _logger.LogInformation("Request Method: GET");
                 _logger.LogInformation("Request Data: MenuId={MenuId}", menuId);
                 
-                var response = await _httpClient.GetAsync(url);
+                var response = await _httpClient.GetAsync(apiUrl);
                 var content = await response.Content.ReadAsStringAsync();
                 
                 _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
@@ -138,122 +150,22 @@ namespace CafeteriaOrderingFrontend.Pages
             }
         }
 
-        public async Task<IActionResult> OnGetGetMenuItemsAsync(int menuId)
-        {
-            try
-            {
-                var token = HttpContext.Session.GetString("Token");
-                _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-
-                var apiUrl = $"{_apiBaseUrl}/api/Manager/ViewMenuItem/{menuId}";
-                _logger.LogInformation("Requesting menu items for menu {MenuId} from: {Url}", menuId, apiUrl);
-
-                var response = await _httpClient.GetAsync(apiUrl);
-                var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation("Response status: {StatusCode}, Content: {Content}", response.StatusCode, content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var options = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        ReferenceHandler = ReferenceHandler.Preserve,
-                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                    };
-
-                    // Parse the root object to get the $values array
-                    using var doc = JsonDocument.Parse(content);
-                    var root = doc.RootElement;
-                    var values = root.GetProperty("$values");
-                    
-                    var menuItems = JsonSerializer.Deserialize<List<MenuItem>>(values.GetRawText(), options) ?? new List<MenuItem>();
-                    _logger.LogInformation("Successfully deserialized {Count} menu items", menuItems.Count);
-
-                    return new JsonResult(menuItems, options);
-                }
-                else
-                {
-                    _logger.LogError("Failed to load menu items. Status code: {StatusCode}, Content: {Content}", response.StatusCode, content);
-                    return new JsonResult(new { error = "Failed to load menu items" }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading menu items for menu {MenuId}", menuId);
-                return new JsonResult(new { error = "An error occurred while loading menu items" }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-            }
-        }
-
-        public async Task<IActionResult> OnGetGetMenuItemAsync(int itemId)
-        {
-            try
-            {
-                _logger.LogInformation("=== Starting Get Menu Item API Call ===");
-                var url = $"{_apiBaseUrl}/api/Manager/ViewMenuItem/{itemId}";
-                
-                _logger.LogInformation("Request URL: {Url}", url);
-                _logger.LogInformation("Request Method: GET");
-                _logger.LogInformation("Request Data: ItemId={ItemId}", itemId);
-                
-                var response = await _httpClient.GetAsync(url);
-                var content = await response.Content.ReadAsStringAsync();
-                
-                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
-                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
-                _logger.LogInformation("Response Content: {Content}", content);
-                _logger.LogInformation("=== End Get Menu Item API Call ===");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var options = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        ReferenceHandler = ReferenceHandler.Preserve,
-                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                    };
-                    
-                    // Parse the root object to get the $values array
-                    using var doc = JsonDocument.Parse(content);
-                    var root = doc.RootElement;
-                    
-                    // If the response is a single item, it won't have $values
-                    if (root.TryGetProperty("$values", out var values))
-                    {
-                        // If it's an array, get the first item
-                        var items = JsonSerializer.Deserialize<List<MenuItem>>(values.GetRawText(), options);
-                        var item = items?.FirstOrDefault();
-                        return new JsonResult(item, options);
-                    }
-                    else
-                    {
-                        // If it's a single item, deserialize directly
-                        var item = JsonSerializer.Deserialize<MenuItem>(content, options);
-                        return new JsonResult(item, options);
-                    }
-                }
-                return new NotFoundResult();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching menu item {ItemId}", itemId);
-                return new StatusCodeResult(500);
-            }
-        }
-
         public async Task<IActionResult> OnPostSaveMenuAsync([FromForm] int menuId, [FromForm] string menuName, [FromForm] string description, [FromForm] bool isStatus)
         {
             try
             {
+                _token = HttpContext.Session.GetString("Token");
+                _userId = HttpContext.Session.GetString("UserId");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
+
                 _logger.LogInformation("=== Starting Save Menu API Call ===");
                 var formData = new MultipartFormDataContent();
                 formData.Add(new StringContent(menuId.ToString()), "MenuId");
                 formData.Add(new StringContent(menuName), "MenuName");
                 formData.Add(new StringContent(description), "Description");
                 formData.Add(new StringContent(isStatus.ToString().ToLower()), "IsStatus");
-                formData.Add(new StringContent("1"), "ManagerId");
+                formData.Add(new StringContent(_userId), "ManagerId");
 
                 var url = menuId == 0 
                     ? $"{_apiBaseUrl}/api/Manager/CreateMenu"
@@ -306,6 +218,11 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
+                _token = HttpContext.Session.GetString("Token");
+                _userId = HttpContext.Session.GetString("UserId");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
+
                 _logger.LogInformation("=== Starting Save Menu Item API Call ===");
                 var formData = new MultipartFormDataContent();
                 formData.Add(new StringContent(menuId.ToString()), "MenuId");
@@ -323,6 +240,9 @@ namespace CafeteriaOrderingFrontend.Pages
                 _logger.LogInformation("Request Method: {Method}", itemId == 0 ? "POST" : "PUT");
                 _logger.LogInformation("Request Data: ItemId={ItemId}, MenuId={MenuId}, ItemName={ItemName}, Description={Description}, Price={Price}, ItemType={ItemType}, IsStatus={IsStatus}", 
                     itemId, menuId, itemName, description, price, itemType, isStatus);
+
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
 
                 HttpResponseMessage response;
                 if (itemId == 0)
@@ -373,6 +293,11 @@ namespace CafeteriaOrderingFrontend.Pages
                 _logger.LogInformation("Request Method: DELETE");
                 _logger.LogInformation("Request Data: MenuId={MenuId}", menuId);
 
+                _token = HttpContext.Session.GetString("Token");
+                _userId = HttpContext.Session.GetString("UserId");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
+
                 var response = await _httpClient.DeleteAsync(url);
                 var content = await response.Content.ReadAsStringAsync();
                 
@@ -404,10 +329,15 @@ namespace CafeteriaOrderingFrontend.Pages
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostDeleteMenuItemAsync([FromQuery] int itemId)
+        public async Task<IActionResult> OnPostDeleteMenuItemAsync(int itemId)
         {
             try
             {
+                _token = HttpContext.Session.GetString("Token");
+                _userId = HttpContext.Session.GetString("UserId");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
+
                 _logger.LogInformation("=== Starting Delete Menu Item API Call ===");
                 var url = $"{_apiBaseUrl}/api/Manager/DeleteMenuItem/{itemId}";
                 
@@ -542,6 +472,116 @@ namespace CafeteriaOrderingFrontend.Pages
             }
 
             return Page();
+        }
+
+        public async Task<IActionResult> OnGetGetMenuItemsAsync(int menuId)
+        {
+            try
+            {
+                var token = HttpContext.Session.GetString("Token");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+                var apiUrl = $"{_apiBaseUrl}/api/Manager/ViewMenuItem/{menuId}";
+                _logger.LogInformation("Requesting menu items for menu {MenuId} from: {Url}", menuId, apiUrl);
+
+                var response = await _httpClient.GetAsync(apiUrl);
+                var content = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation("Response status: {StatusCode}, Content: {Content}", response.StatusCode, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        ReferenceHandler = ReferenceHandler.Preserve,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
+
+                    // Parse the root object to get the $values array
+                    using var doc = JsonDocument.Parse(content);
+                    var root = doc.RootElement;
+                    var values = root.GetProperty("$values");
+                    
+                    var menuItems = JsonSerializer.Deserialize<List<MenuItem>>(values.GetRawText(), options) ?? new List<MenuItem>();
+                    _logger.LogInformation("Successfully deserialized {Count} menu items", menuItems.Count);
+
+                    return new JsonResult(menuItems, options);
+                }
+                else
+                {
+                    _logger.LogError("Failed to load menu items. Status code: {StatusCode}, Content: {Content}", response.StatusCode, content);
+                    return new JsonResult(new { error = "Failed to load menu items" }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading menu items for menu {MenuId}", menuId);
+                return new JsonResult(new { error = "An error occurred while loading menu items" }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            }
+        }
+
+        public async Task<IActionResult> OnGetGetMenuItemAsync(int itemId)
+        {
+            try
+            {
+                _token = HttpContext.Session.GetString("Token");
+                _userId = HttpContext.Session.GetString("UserId");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
+
+                _logger.LogInformation("=== Starting Get Menu Item API Call ===");
+                var url = $"{_apiBaseUrl}/api/Manager/ViewMenuItem/{itemId}";
+                
+                _logger.LogInformation("Request URL: {Url}", url);
+                _logger.LogInformation("Request Method: GET");
+                _logger.LogInformation("Request Data: ItemId={ItemId}", itemId);
+                
+                var response = await _httpClient.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
+                _logger.LogInformation("Response Headers: {Headers}", string.Join(", ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}")));
+                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("=== End Get Menu Item API Call ===");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        ReferenceHandler = ReferenceHandler.Preserve,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
+                    
+                    // Parse the root object to get the $values array
+                    using var doc = JsonDocument.Parse(content);
+                    var root = doc.RootElement;
+                    
+                    // If the response is a single item, it won't have $values
+                    if (root.TryGetProperty("$values", out var values))
+                    {
+                        // If it's an array, get the first item
+                        var items = JsonSerializer.Deserialize<List<MenuItem>>(values.GetRawText(), options);
+                        var item = items?.FirstOrDefault();
+                        return new JsonResult(item, options);
+                    }
+                    else
+                    {
+                        // If it's a single item, deserialize directly
+                        var item = JsonSerializer.Deserialize<MenuItem>(content, options);
+                        return new JsonResult(item, options);
+                    }
+                }
+                return new NotFoundResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching menu item {ItemId}", itemId);
+                return new StatusCodeResult(500);
+            }
         }
     }
 }

@@ -12,7 +12,7 @@ using CafeteriaOrdering.API.Constants;
 
 namespace ManagerAPI.Controllers
 {
-    // [Authorize("MANAGER")]
+    [Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]
     public class ManagerController : ControllerBase
@@ -128,10 +128,26 @@ namespace ManagerAPI.Controllers
             if (menu == null)
                 return NotFound(new { message = "Menu not found" });
 
-            // Cập nhật IsStatus thành 0 (false) thay vì xóa
-            menu.IsStatus = false;
-            menu.UpdatedAt = DateTime.UtcNow; // Cập nhật thời gian sửa đổi
+            var menuItems = await _context.MenuItems
+                .Where(m => m.MenuId == id)
+                .ToListAsync();
+
+            if (menuItems.Any()) {
+                foreach (var item in menuItems)
+                {
+                    _context.MenuItems.Remove(item);
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+            _context.Menus.Remove(menu); // Xóa menu
             await _context.SaveChangesAsync();
+
+            // // Cập nhật IsStatus thành 0 (false) thay vì xóa
+            // menu.IsStatus = false;
+            // menu.UpdatedAt = DateTime.UtcNow; // Cập nhật thời gian sửa đổi
+            // await _context.SaveChangesAsync();
             return Ok(new { message = "Menu has been deactivated" });
         }
 
@@ -157,7 +173,8 @@ namespace ManagerAPI.Controllers
         public async Task<IActionResult> GetMenuItem(int id)
         {
             var menuItem = await _context.MenuItems
-                .Where(m => m.ItemId == id && m.IsStatus == true)
+                // .Where(m => m.ItemId == id && m.IsStatus == true)
+                .Where(m => m.ItemId == id)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
@@ -211,7 +228,7 @@ namespace ManagerAPI.Controllers
                 Description = menuItemDto.Description,
                 Price = menuItemDto.Price,
                 ItemType = menuItemDto.ItemType,
-                //CountItemsSold = menuItemDto.CountItemsSold = 0,
+                CountItemsSold = 0,
                 IsStatus = menuItemDto.IsStatus ?? true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -301,8 +318,10 @@ namespace ManagerAPI.Controllers
             if (menuItem == null)
                 return NotFound(new { message = "Menu item not found" });
 
-            menuItem.IsStatus = false; // Đánh dấu là không hoạt động thay vì xóa
-            menuItem.UpdatedAt = DateTime.UtcNow;
+            // menuItem.IsStatus = false; // Đánh dấu là không hoạt động thay vì xóa
+            // menuItem.UpdatedAt = DateTime.UtcNow;
+
+            _context.MenuItems.Remove(menuItem);
 
             await _context.SaveChangesAsync();
 
@@ -408,7 +427,7 @@ namespace ManagerAPI.Controllers
 
 
 
-        [HttpGet("by-manager/{managerId}")]
+        [HttpGet("GetMenusByManager/{managerId}")]
         public IActionResult GetMenusByManager(int managerId)
         {
             var menus = _context.Menus

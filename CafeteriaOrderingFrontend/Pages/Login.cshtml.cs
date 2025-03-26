@@ -57,13 +57,18 @@ namespace CafeteriaOrderingFrontend.Pages
                 _logger.LogInformation("Response Content: {Content}", content);
                 _logger.LogInformation("=== End Login API Call ===");
 
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true // Allows matching case-insensitive properties
+                };
+
                 if (response.IsSuccessStatusCode)
                 {
-                    var loginResponse = JsonSerializer.Deserialize<LoginResponseDTO>(content);
+                    var loginResponse = JsonSerializer.Deserialize<LoginResponseDTO>(content, options);
                     
                     // Store user information in session
                     HttpContext.Session.SetString("Token", loginResponse.Token);
-                    HttpContext.Session.SetString("Role", loginResponse.Role);
+                    HttpContext.Session.SetString("Role", loginResponse.Role.ToUpper());
                     HttpContext.Session.SetString("UserId", loginResponse.AccountId);
 
                     // Redirect based on role
