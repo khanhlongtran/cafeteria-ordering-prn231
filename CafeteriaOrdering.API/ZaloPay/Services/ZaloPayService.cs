@@ -34,7 +34,7 @@ namespace CafeteriaOrdering.API.ZaloPay.Services
             var appTransId = orderId.HasValue
                 ? $"{DateTime.Now.ToString("yyMMdd")}_{orderId.Value}_{randomPart}"
                 : $"{DateTime.Now.ToString("yyMMdd")}_{randomPart}";
-            var appTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var appTime = DateTimeOffset.Now.ToOffset(TimeSpan.FromHours(7)).ToUnixTimeMilliseconds();
 
             string embedData;
             string bankCode;
@@ -60,7 +60,7 @@ namespace CafeteriaOrdering.API.ZaloPay.Services
                     break;
             }
 
-            var request = new CreateOrderRequest
+            var request = new CreateZaloOrderRequest
             {
                 app_id = int.Parse(_config.AppId),
                 app_user = "UserTest",

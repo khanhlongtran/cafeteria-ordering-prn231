@@ -8,6 +8,7 @@ using CafeteriaOrdering.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using CafeteriaOrdering.API.Vnpay;
 
 namespace CafeteriaOrdering.API
 {
@@ -56,6 +57,8 @@ namespace CafeteriaOrdering.API
             var key2 = zaloPayConfig["Key2"];
             var endpoint = zaloPayConfig["Endpoint"];
 
+            builder.Services.Configure<VnpayConfig>(builder.Configuration.GetSection("Vnpay"));
+            builder.Services.AddScoped<VnpayHelper>();
             builder.Services.Configure<ZaloPayConfig>(zaloPayConfig);
             builder.Services.AddHttpClient<ZaloPayService>();
             builder.Services.AddScoped<IMealDeliveryService, MealDeliveryService>();
@@ -66,11 +69,11 @@ namespace CafeteriaOrdering.API
                 {
                     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // Tắt "$id"
                 });
+            builder.Services.AddMemoryCache();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
-
             // 🔥 Sử dụng scope để lấy Scoped Services
             using (var scope = app.Services.CreateScope())
             {
