@@ -1,6 +1,6 @@
 ﻿namespace CafeteriaOrdering.API.ZaloPay.Models
 {
-    public class CreateOrderRequest
+    public class CreateZaloOrderRequest
     {
         public int app_id { get; set; }
         public string app_user { get; set; }
