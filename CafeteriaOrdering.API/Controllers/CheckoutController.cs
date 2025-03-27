@@ -217,12 +217,14 @@ namespace CafeteriaOrdering.API.Controllers
 
                 //return Ok(new { Success = true, Message = "Thanh toán thành công", OrderId = order.OrderId, Amount = amount });
                 return HandleResponse(true, order.OrderId, amount);
+               // return Ok();
             }
             else
             {
                 memoryCache.Remove(vnp_TxnRef);
                 //return BadRequest(new { Success = false, Message = "Thanh toán thất bại hoặc bị hủy" });
                 return HandleResponse(false);
+               // return BadRequest(new { Success = false, });
             }
         }
 
