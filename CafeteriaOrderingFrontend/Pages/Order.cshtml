@@ -31,17 +31,39 @@
                                 var statuses = new[]
                                 {
                                     new { Value = "REQUEST_DELIVERY", Text = "Request Delivery" },
+                                    new { Value = "CAFETERIA_ACCEPTED", Text = "Cafeteria Accepted" },
+                                    new { Value = "CAFETERIA_REJECTED", Text = "Cafeteria Rejected" },
                                     new { Value = "DELIVERY_ACCEPTED", Text = "Delivery Accepted" },
                                     new { Value = "DELIVERY_IN_PROGRESS", Text = "Delivery in Progress" },
                                     new { Value = "COMPLETED", Text = "Completed" },
                                     new { Value = "CANCELED", Text = "Canceled" }
                                 };
                             }
-                            <select class="form-select form-select-sm me-2" onchange="updateOrderStatus(@order.OrderId, this.value)" style="width: auto;">
-                                <option value="" disabled selected="@(order.Status == null)">Update Status</option>
+                            <select class="form-select form-select-sm me-2" 
+                                    onchange='confirmAndUpdateOrderStatus(@order.OrderId, this.value)'
+                                    style="width: auto;">
+                                <option value="" disabled selected>Update Status</option>
                                 @foreach (var status in statuses)
                                 {
-                                    <option value="@status.Value" selected="@(order.Status == status.Value)">@status.Text</option>
+                                    // Only allow the next status based on the current status (case-insensitive comparison)
+                                    if (
+                                        (string.Equals(order.Status, "PENDING", StringComparison.OrdinalIgnoreCase) && 
+                                            (string.Equals(status.Value, "CAFETERIA_ACCEPTED", StringComparison.OrdinalIgnoreCase) || 
+                                             string.Equals(status.Value, "CAFETERIA_REJECTED", StringComparison.OrdinalIgnoreCase))) ||
+                                        (string.Equals(order.Status, "CAFETERIA_ACCEPTED", StringComparison.OrdinalIgnoreCase) && 
+                                            string.Equals(status.Value, "REQUEST_DELIVERY", StringComparison.OrdinalIgnoreCase)) ||
+                                        (string.Equals(order.Status, "REQUEST_DELIVERY", StringComparison.OrdinalIgnoreCase) && 
+                                            (string.Equals(status.Value, "DELIVERY_ACCEPTED", StringComparison.OrdinalIgnoreCase) || 
+                                             string.Equals(status.Value, "CANCELED", StringComparison.OrdinalIgnoreCase))) ||
+                                        (string.Equals(order.Status, "DELIVERY_ACCEPTED", StringComparison.OrdinalIgnoreCase) && 
+                                            (string.Equals(status.Value, "DELIVERY_IN_PROGRESS", StringComparison.OrdinalIgnoreCase) || 
+                                             string.Equals(status.Value, "CANCELED", StringComparison.OrdinalIgnoreCase))) ||
+                                        (string.Equals(order.Status, "DELIVERY_IN_PROGRESS", StringComparison.OrdinalIgnoreCase) && 
+                                            string.Equals(status.Value, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+                                    )
+                                    {
+                                        <option value="@status.Value">@status.Text</option>
+                                    }
                                 }
                             </select>
                             <span class="badge @GetStatusBadgeClass(order.Status)">@order.Status</span>
@@ -155,6 +177,10 @@
     </div>
 </div>
 
+<div>
+    @Html.AntiForgeryToken()
+</div>
+
 @section Scripts {
     <script>
         let trackOrderModal;
@@ -227,6 +253,48 @@
                 if (result.success) {
                     const content = JSON.parse(result.content);
                     alert(content.message || 'Order status updated successfully');
+                    window.location.reload();
+                } else {
+                    alert('Failed to update order status: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while updating the order status');
+            }
+        }
+
+        async function confirmAndUpdateOrderStatus(orderId, status) {
+            const confirmUpdate = confirm(`Are you sure you want to update the order status to "${status}"?`);
+            if (!confirmUpdate) {
+                // Reload the page to reset the dropdown to its previous value
+                window.location.reload();
+                return;
+            }
+
+            console.log('orderId:', orderId); // Debug log
+            console.log('status:', status); // Debug log
+
+            try {
+                const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (!tokenElement) {
+                    console.error("Anti-forgery token not found!");
+                    alert("An error occurred: Anti-forgery token is missing.");
+                    return;
+                }
+
+                const token = tokenElement.value;
+
+                const response = await fetch(window.location.pathname + "?handler=UpdateOrderStatus", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: `orderId=${orderId}&status=${status}&__RequestVerificationToken=${token}`
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Order status updated successfully!');
                     window.location.reload();
                 } else {
                     alert('Failed to update order status: ' + (result.message || 'Unknown error'));
@@ -430,4 +498,4 @@
             _ => "bg-secondary"
         };
     }
-} 
+}

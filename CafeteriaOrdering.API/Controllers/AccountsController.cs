@@ -39,7 +39,7 @@ namespace CafeteriaOrdering.API.Controllers
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim("Role", user.Role.ToString()),
+                    new Claim("Role", user.Role.ToString().ToUpper()),
                     new Claim("AccountId", user.UserId.ToString())
                 };
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtConfig:Key"]));
@@ -53,12 +53,12 @@ namespace CafeteriaOrdering.API.Controllers
                 signingCredentials: creds);
 
                 var token = new JwtSecurityTokenHandler().WriteToken(preparedToken);
-                var role = user.Role;
+                var role = user.Role.ToString().ToUpper();
                 var userId = user.UserId.ToString();
                 var response = new LoginResponseDTO
                 {
                     Token = token,
-                    Role = user.Role,
+                    Role = user.Role.ToString().ToUpper(),
                     AccountId = user.UserId.ToString()
                 };
                 return Ok(response);

@@ -8,10 +8,11 @@ using System.Threading.Tasks;
 using CafeteriaOrdering.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using CafeteriaOrdering.API.DTO;
+using CafeteriaOrdering.API.Constants;
 
 namespace ManagerAPI.Controllers
 {
-    // [Authorize("MANAGER")]
+    [Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]
     public class ManagerController : ControllerBase
@@ -127,10 +128,26 @@ namespace ManagerAPI.Controllers
             if (menu == null)
                 return NotFound(new { message = "Menu not found" });
 
-            // Cập nhật IsStatus thành 0 (false) thay vì xóa
-            menu.IsStatus = false;
-            menu.UpdatedAt = DateTime.UtcNow; // Cập nhật thời gian sửa đổi
+            var menuItems = await _context.MenuItems
+                .Where(m => m.MenuId == id)
+                .ToListAsync();
+
+            if (menuItems.Any()) {
+                foreach (var item in menuItems)
+                {
+                    _context.MenuItems.Remove(item);
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+            _context.Menus.Remove(menu); // Xóa menu
             await _context.SaveChangesAsync();
+
+            // // Cập nhật IsStatus thành 0 (false) thay vì xóa
+            // menu.IsStatus = false;
+            // menu.UpdatedAt = DateTime.UtcNow; // Cập nhật thời gian sửa đổi
+            // await _context.SaveChangesAsync();
             return Ok(new { message = "Menu has been deactivated" });
         }
 
@@ -156,7 +173,8 @@ namespace ManagerAPI.Controllers
         public async Task<IActionResult> GetMenuItem(int id)
         {
             var menuItem = await _context.MenuItems
-                .Where(m => m.ItemId == id && m.IsStatus == true)
+                // .Where(m => m.ItemId == id && m.IsStatus == true)
+                .Where(m => m.ItemId == id)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
@@ -210,7 +228,7 @@ namespace ManagerAPI.Controllers
                 Description = menuItemDto.Description,
                 Price = menuItemDto.Price,
                 ItemType = menuItemDto.ItemType,
-                //CountItemsSold = menuItemDto.CountItemsSold = 0,
+                CountItemsSold = 0,
                 IsStatus = menuItemDto.IsStatus ?? true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -300,8 +318,10 @@ namespace ManagerAPI.Controllers
             if (menuItem == null)
                 return NotFound(new { message = "Menu item not found" });
 
-            menuItem.IsStatus = false; // Đánh dấu là không hoạt động thay vì xóa
-            menuItem.UpdatedAt = DateTime.UtcNow;
+            // menuItem.IsStatus = false; // Đánh dấu là không hoạt động thay vì xóa
+            // menuItem.UpdatedAt = DateTime.UtcNow;
+
+            _context.MenuItems.Remove(menuItem);
 
             await _context.SaveChangesAsync();
 
@@ -353,13 +373,22 @@ namespace ManagerAPI.Controllers
 
 
 
-        [HttpPut("{orderId}/status")]
+        [HttpPut("UpdateOrderStatus/{orderId}")]
         public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateStatusRequest request)
         {
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null)
             {
                 return NotFound(new { message = "Order not found" });
+            }
+
+            if (request.Status == OrderConstants.OrderStatus.REQUEST_DELIVERY.ToString())
+            {
+                order.Status = OrderConstants.OrderStatus.DELIVERY_ACCEPTED.ToString();
+
+                // Chèn vào bảng Deliveries
+                var delivery = new Delivery { OrderId = orderId };
+                _context.Deliveries.Add(delivery);
             }
 
             order.Status = request.Status;
@@ -369,13 +398,52 @@ namespace ManagerAPI.Controllers
 
             return Ok(new { message = "Order status updated successfully" });
         }
+
+
+        // Model cho request body
+        public class UpdateStatusRequest
+        {
+            public string Status { get; set; } = null!;
+        }
+
+
+
+        [HttpGet("GetOrdersByManager/{managerId}")]
+        public IActionResult GetOrdersByManager(int managerId)
+        {
+            var orders = _context.Orders
+                .Where(o => o.OrderItems.Any(oi => oi.Item.Menu.ManagerId == managerId))
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Item)
+                .ToList();
+
+            if (!orders.Any())
+            {
+                return NotFound("No orders found for this manager.");
+            }
+
+            return Ok(orders);
+        }
+
+
+
+        [HttpGet("GetMenusByManager/{managerId}")]
+        public IActionResult GetMenusByManager(int managerId)
+        {
+            var menus = _context.Menus
+                .Where(m => m.ManagerId == managerId)
+                .Include(m => m.MenuItems)
+                .ToList();
+
+            if (!menus.Any())
+            {
+                return NotFound("No menus found for this manager.");
+            }
+
+            return Ok(menus);
+        }
+
     }
-
-    // Model cho request body
-    public class UpdateStatusRequest
-    {
-        public string Status { get; set; } = null!;
-    }
-
-
 }
+
+
