@@ -8,85 +8,24 @@
 <div class="container-fluid py-4">
     <div class="row">
         <div class="col-12">
-            <div class="container">
-                <h2>Revenue Report</h2>
-                <form method="post" asp-page-handler="FilterRevenue" class="row g-3">
-                    <div class="col-md-4">
-                        <label for="month" class="form-label">Select Month</label>
-                        <select id="month" name="month" class="form-select">
-                            @for (int i = 1; i <= 12; i++)
-                            {
-                                <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">
-                                    @CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(i)
-                                </option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="year" class="form-label">Select Year</label>
-                        <select id="year" name="year" class="form-select">
-                            @for (int i = DateTime.Now.Year - 5; i <= DateTime.Now.Year; i++)
-                            {
-                                <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">
-                                    @i
-                                </option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Filter</button>
-                    </div>
-                </form>
-
-                <hr />
-            </div>
-
-            <div class="card mb-4" style="padding: 20px;">
-                <h3>Revenue Details</h3>
-                @if (!string.IsNullOrEmpty(Model.Message))
-                {
-                    <div class="alert alert-@(Model.IsSuccess ? "success" : "danger") alert-dismissible fade show" role="alert">
-                        @Model.Message
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
-                @if (Model.RevenueReports != null && Model.RevenueReports.Any())
-                {
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Total Orders</th>
-                                <th>Total Revenue</th>
-                                <th>Report Generated At</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>@Model.TotalOrders</td>
-                                <td>@Model.TotalRevenue.ToString("C")</td>
-                                <td>@Model.GeneratedAt</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <p>No revenue data available for the selected period.</p>
-                }
-            </div>
-
             <div class="card mb-4">
                 <div class="card-header pb-0 d-flex justify-content-between align-items-center">
                     <h6>Revenue Overview</h6>
+                    <form method="post" asp-page-handler="GenerateReport">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fa fa-refresh"></i> Generate Report
+                        </button>
+                    </form>
                 </div>
-                @if (!string.IsNullOrEmpty(Model.Message))
+                <div class="card-body px-0 pt-0 pb-2">
+                    @if (!string.IsNullOrEmpty(Model.Message))
                     {
                         <div class="alert alert-@(Model.IsSuccess ? "success" : "danger") alert-dismissible fade show" role="alert">
                             @Model.Message
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }
-                <div class="card-body px-0 pt-0 pb-2">
+
                     <div class="row p-4">
                         <div class="col-xl-3 col-sm-6 mb-4">
                             <div class="card">
@@ -136,7 +75,7 @@
                         <div class="col-12">
                             <div class="card mb-4">
                                 <div class="card-header pb-0">
-                                    <h6>Revenue Reports History</h6>
+                                    <h6>Revenue Reports</h6>
                                 </div>
                                 <div class="card-body px-0 pt-0 pb-2">
                                     <div class="table-responsive p-0">
@@ -222,7 +161,66 @@
                 </div> <!-- Closing the last card-body div -->
             </div> <!-- Closing the last card div -->
 
-            
+            <div class="container">
+                <h2>Revenue Report</h2>
+                <form method="post" asp-page-handler="FilterRevenue" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="month" class="form-label">Select Month</label>
+                        <select id="month" name="month" class="form-select">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">
+                                    @CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(i)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="year" class="form-label">Select Year</label>
+                        <select id="year" name="year" class="form-select">
+                            @for (int i = DateTime.Now.Year - 5; i <= DateTime.Now.Year; i++)
+                            {
+                                <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">
+                                    @i
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </form>
+
+                <hr />
+
+                <h3>Revenue Details</h3>
+                @if (Model.RevenueReports != null && Model.RevenueReports.Any())
+                {
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Total Orders</th>
+                                <th>Total Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var report in Model.RevenueReports)
+                            {
+                                <tr>
+                                    <td>AQ</td>
+                                    <td>@report.TotalOrders</td>
+                                    <td>@report.TotalRevenue.ToString("C")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No revenue data available for the selected period.</p>
+                }
+            </div>
         </div> <!-- Closing the last col-12 div -->
     </div> <!-- Closing the last row div -->
 </div> <!-- Closing the container-fluid div -->
