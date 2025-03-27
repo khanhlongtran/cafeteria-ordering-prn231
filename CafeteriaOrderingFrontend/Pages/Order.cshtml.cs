@@ -8,13 +8,15 @@ using System.Text.Json.Serialization;
 
 namespace CafeteriaOrderingFrontend.Pages
 {
-    public class OrderModel : PageModel
+    public class OrderModel : BasePageModel
     {
         private readonly ILogger<OrderModel> _logger;
         private readonly HttpClient _httpClient;
-        private readonly string _apiBaseUrl;
+        private readonly IConfiguration _configuration;
+        private string? userId;
 
         public List<Order> Orders { get; set; } = new();
+        public string? ErrorMessage { get; set; }
         public string Message { get; set; }
         public bool IsSuccess { get; set; }
 
@@ -22,52 +24,84 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             _logger = logger;
             _httpClient = httpClient;
-            _apiBaseUrl = configuration["ApiSettings:BaseUrl"];
+            _configuration = configuration;
         }
 
-        public async Task<IActionResult> OnGetAsync()
+        public override async Task<IActionResult> OnGetAsync()
         {
+            // Check authentication first
+            var authResult = await CheckAuthenticationAsync();
+            if (authResult != null)
+            {
+                return authResult;
+            }
+
             try
             {
-                _logger.LogInformation("=== Starting Get Orders API Call ===");
-                var url = $"{_apiBaseUrl}/api/Manager/GetAllOrder";
-                
-                var response = await _httpClient.GetAsync(url);
+                var token = HttpContext.Session.GetString("Token");
+                var role = HttpContext.Session.GetString("Role");
+                var userId = HttpContext.Session.GetString("UserId");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+                string apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/GetOrdersByManager/{userId}";
+
+                _logger.LogInformation("Requesting orders from: {Url}", apiUrl);
+
+                var response = await _httpClient.GetAsync(apiUrl);
                 var content = await response.Content.ReadAsStringAsync();
-                
-                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
-                _logger.LogInformation("Response Content: {Content}", content);
+                _logger.LogInformation("Response status: {StatusCode}, Content: {Content}", response.StatusCode, content);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Orders = JsonSerializer.Deserialize<List<Order>>(content, new JsonSerializerOptions
+                    var options = new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true,
-                        ReferenceHandler = ReferenceHandler.Preserve
-                    });
-                    return Page();
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        ReferenceHandler = ReferenceHandler.Preserve,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
+
+                    // Parse the root object to get the $values array
+                    // using var doc = JsonDocument.Parse(content);
+                    // var root = doc.RootElement;
+                    // var values = root.GetProperty("$values");
+
+                    Orders = JsonSerializer.Deserialize<List<Order>>(content, options) ?? new List<Order>();
+                    _logger.LogInformation("Successfully deserialized {Count} orders", Orders.Count);
+                    Message = "Orders loaded successfully";
+                    IsSuccess = true;
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // Handle 404 Not Found by returning an empty list
+                    Orders = new List<Order>();
+                    Message = "No orders found.";
+                    IsSuccess = true;
+                    _logger.LogWarning("No orders found for user {UserId}", userId);
                 }
                 else
                 {
-                    Message = "Failed to load orders";
+                    Message = "Failed to load orders. Please try again later.";
                     IsSuccess = false;
-                    return Page();
+                    _logger.LogError("Failed to load orders. Status code: {StatusCode}, Content: {Content}", response.StatusCode, content);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading orders");
-                Message = $"Error: {ex.Message}";
+                Message = "An error occurred while loading orders.";
                 IsSuccess = false;
-                return Page();
+                _logger.LogError(ex, "Error loading orders");
             }
+
+            return Page();
         }
 
         public async Task<IActionResult> OnGetTrackOrderAsync(int orderId)
         {
             try
             {
-                var url = $"{_apiBaseUrl}/api/Manager/GetOrderItems/{orderId}";
+                var url = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/GetOrderItems/{orderId}";
                 var response = await _httpClient.GetAsync(url);
                 var content = await response.Content.ReadAsStringAsync();
                 
@@ -79,37 +113,40 @@ namespace CafeteriaOrderingFrontend.Pages
             }
         }
 
-        public async Task<IActionResult> OnPostUpdateOrderStatusAsync(int orderId, [FromBody] UpdateStatusRequest request)
+        public async Task<IActionResult> OnPostUpdateOrderStatusAsync(int? orderId, string? status)
         {
             try
             {
-                _logger.LogInformation("=== Starting Update Order Status API Call ===");
-                var url = $"{_apiBaseUrl}/api/Manager/{orderId}/status";
-                
-                _logger.LogInformation("Request URL: {Url}", url);
-                _logger.LogInformation("Request Method: PUT");
-                _logger.LogInformation("Request Body: {Body}", JsonSerializer.Serialize(request));
+                var token = HttpContext.Session.GetString("Token");
+                var role = HttpContext.Session.GetString("Role");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-                var response = await _httpClient.PutAsJsonAsync(url, request);
-                var content = await response.Content.ReadAsStringAsync();
-                
-                _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
-                _logger.LogInformation("Response Content: {Content}", content);
-                _logger.LogInformation("=== End Update Order Status API Call ===");
+                string apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/UpdateOrderStatus/{orderId}";
+
+                var content = new StringContent(
+                    JsonSerializer.Serialize(new { status }),
+                    System.Text.Encoding.UTF8,
+                    "application/json"
+                );
+
+                var response = await _httpClient.PutAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
-                    return new JsonResult(new { success = true, content });
+                    return new JsonResult(new { success = true });
                 }
                 else
                 {
-                    return new JsonResult(new { success = false, message = "Failed to update order status", content });
+                    _logger.LogError("Failed to update order status. Status code: {StatusCode}, Content: {Content}", response.StatusCode, responseContent);
+                    return new JsonResult(new { success = false, message = "Failed to update order status" });
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating order status for order {OrderId}", orderId);
-                return new JsonResult(new { success = false, message = ex.Message });
+                return new JsonResult(new { success = false, message = "An error occurred while updating order status" });
             }
         }
 
@@ -118,7 +155,7 @@ namespace CafeteriaOrderingFrontend.Pages
             try
             {
                 _logger.LogInformation("=== Starting Submit Feedback API Call ===");
-                var url = $"{_apiBaseUrl}/api/Patron/MyOrder/MakeAFeedback";
+                var url = $"{_configuration["ApiSettings:BaseUrl"]}/api/Patron/MyOrder/MakeAFeedback";
                 
                 // Set the user ID to 1 for testing
                 request.UserId = 1;
@@ -149,7 +186,7 @@ namespace CafeteriaOrderingFrontend.Pages
             try
             {
                 _logger.LogInformation("=== Starting Process Payment API Call ===");
-                var url = $"{_apiBaseUrl}/api/Checkout/{paymentMethod}?orderId={orderId}";
+                var url = $"{_configuration["ApiSettings:BaseUrl"]}/api/Checkout/{paymentMethod}?orderId={orderId}";
                 
                 _logger.LogInformation("Request URL: {Url}", url);
                 _logger.LogInformation("Request Method: POST");
@@ -175,15 +212,19 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
+                var token = HttpContext.Session.GetString("Token");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
                 _logger.LogInformation("=== Starting Get Order Items API Call ===");
-                var url = $"{_apiBaseUrl}/api/Manager/GetOrderItems/{orderId}";
-                
+                var url = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/GetOrderItems/{orderId}";
+
                 _logger.LogInformation("Request URL: {Url}", url);
                 _logger.LogInformation("Request Method: GET");
 
                 var response = await _httpClient.GetAsync(url);
                 var content = await response.Content.ReadAsStringAsync();
-                
+
                 _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
                 _logger.LogInformation("Response Content: {Content}", content);
 
@@ -195,27 +236,22 @@ namespace CafeteriaOrderingFrontend.Pages
                         ReferenceHandler = ReferenceHandler.Preserve
                     };
 
-                    // Deserialize the root object first
-                    var rootObject = JsonSerializer.Deserialize<JsonDocument>(content, options);
-                    var itemsArray = rootObject.RootElement.GetProperty("$values");
-                    
-                    if (itemsArray.GetArrayLength() == 0)
+                    // Deserialize the JSON content into a list of OrderItem objects
+                    var orderItems = JsonSerializer.Deserialize<List<OrderItem>>(content, options);
+
+                    if (orderItems == null || orderItems.Count == 0)
                     {
                         return new JsonResult(new { success = false, message = "No items found" });
                     }
 
-                    var simplifiedItems = new List<object>();
-                    foreach (var item in itemsArray.EnumerateArray())
+                    // Simplify the items for the response
+                    var simplifiedItems = orderItems.Select(item => new
                     {
-                        var orderItem = item.Deserialize<OrderItem>(options);
-                        simplifiedItems.Add(new
-                        {
-                            itemName = orderItem.Item?.ItemName ?? "Unknown Item",
-                            quantity = orderItem.Quantity,
-                            price = orderItem.Price,
-                            total = orderItem.Price
-                        });
-                    }
+                        itemName = item.Item?.ItemName ?? "Unknown Item",
+                        quantity = item.Quantity,
+                        price = item.Price,
+                        total = item.Quantity * item.Price
+                    }).ToList();
 
                     return new JsonResult(new { success = true, items = simplifiedItems });
                 }
@@ -236,4 +272,10 @@ namespace CafeteriaOrderingFrontend.Pages
             public string Status { get; set; }
         }
     }
-} 
+
+    public class UpdateOrderStatusRequest
+    {
+        public int OrderId { get; set; }
+        public string Status { get; set; }
+    }
+}
