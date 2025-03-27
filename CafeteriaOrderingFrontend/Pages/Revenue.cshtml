@@ -1,5 +1,6 @@
 @page
 @model CafeteriaOrderingFrontend.Pages.RevenueModel
+@using System.Globalization
 @{
     ViewData["Title"] = "Revenue";
 }
@@ -155,8 +156,71 @@
                             </div>
                         </div>
                     </div>
-                </div>
+
+                    </div> <!-- Closing the last row div -->
+                </div> <!-- Closing the last card-body div -->
+            </div> <!-- Closing the last card div -->
+
+            <div class="container">
+                <h2>Revenue Report</h2>
+                <form method="post" asp-page-handler="FilterRevenue" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="month" class="form-label">Select Month</label>
+                        <select id="month" name="month" class="form-select">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">
+                                    @CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(i)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="year" class="form-label">Select Year</label>
+                        <select id="year" name="year" class="form-select">
+                            @for (int i = DateTime.Now.Year - 5; i <= DateTime.Now.Year; i++)
+                            {
+                                <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">
+                                    @i
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </form>
+
+                <hr />
+
+                <h3>Revenue Details</h3>
+                @if (Model.RevenueReports != null && Model.RevenueReports.Any())
+                {
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Total Orders</th>
+                                <th>Total Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var report in Model.RevenueReports)
+                            {
+                                <tr>
+                                    <td>AQ</td>
+                                    <td>@report.TotalOrders</td>
+                                    <td>@report.TotalRevenue.ToString("C")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No revenue data available for the selected period.</p>
+                }
             </div>
-        </div>
-    </div>
-</div> 
+        </div> <!-- Closing the last col-12 div -->
+    </div> <!-- Closing the last row div -->
+</div> <!-- Closing the container-fluid div -->
