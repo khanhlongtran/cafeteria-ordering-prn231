@@ -44,23 +44,7 @@ namespace CafeteriaOrderingFrontend.Pages
                 _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-                string apiUrl;
-                switch (role)
-                {
-                    case "MANAGER":
-                        apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/ViewOrder";
-                        break;
-                    case "DELIVER":
-                        apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Deliver/ViewOrder";
-                        break;
-                    case "PATRON":
-                        apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Patron/ViewOrder";
-                        break;
-                    default:
-                        Message = "Invalid user role";
-                        IsSuccess = false;
-                        return Page();
-                }
+                string apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/GetOrdersByManager/{userId}";
 
                 _logger.LogInformation("Requesting orders from: {Url}", apiUrl);
 
@@ -79,14 +63,22 @@ namespace CafeteriaOrderingFrontend.Pages
                     };
 
                     // Parse the root object to get the $values array
-                    using var doc = JsonDocument.Parse(content);
-                    var root = doc.RootElement;
-                    var values = root.GetProperty("$values");
-                    
-                    Orders = JsonSerializer.Deserialize<List<Order>>(values.GetRawText(), options) ?? new List<Order>();
+                    // using var doc = JsonDocument.Parse(content);
+                    // var root = doc.RootElement;
+                    // var values = root.GetProperty("$values");
+
+                    Orders = JsonSerializer.Deserialize<List<Order>>(content, options) ?? new List<Order>();
                     _logger.LogInformation("Successfully deserialized {Count} orders", Orders.Count);
                     Message = "Orders loaded successfully";
                     IsSuccess = true;
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // Handle 404 Not Found by returning an empty list
+                    Orders = new List<Order>();
+                    Message = "No orders found.";
+                    IsSuccess = true;
+                    _logger.LogWarning("No orders found for user {UserId}", userId);
                 }
                 else
                 {
@@ -121,7 +113,7 @@ namespace CafeteriaOrderingFrontend.Pages
             }
         }
 
-        public async Task<IActionResult> OnPostUpdateOrderStatusAsync(int orderId, string status)
+        public async Task<IActionResult> OnPostUpdateOrderStatusAsync(int? orderId, string? status)
         {
             try
             {
@@ -130,18 +122,7 @@ namespace CafeteriaOrderingFrontend.Pages
                 _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-                string apiUrl;
-                switch (role)
-                {
-                    case "MANAGER":
-                        apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/UpdateOrderStatus/{orderId}";
-                        break;
-                    case "DELIVER":
-                        apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Deliver/UpdateOrderStatus/{orderId}";
-                        break;
-                    default:
-                        return new JsonResult(new { success = false, message = "Invalid user role" });
-                }
+                string apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/UpdateOrderStatus/{orderId}";
 
                 var content = new StringContent(
                     JsonSerializer.Serialize(new { status }),
@@ -231,15 +212,19 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
+                var token = HttpContext.Session.GetString("Token");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
                 _logger.LogInformation("=== Starting Get Order Items API Call ===");
                 var url = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/GetOrderItems/{orderId}";
-                
+
                 _logger.LogInformation("Request URL: {Url}", url);
                 _logger.LogInformation("Request Method: GET");
 
                 var response = await _httpClient.GetAsync(url);
                 var content = await response.Content.ReadAsStringAsync();
-                
+
                 _logger.LogInformation("Response Status Code: {StatusCode}", response.StatusCode);
                 _logger.LogInformation("Response Content: {Content}", content);
 
@@ -251,27 +236,22 @@ namespace CafeteriaOrderingFrontend.Pages
                         ReferenceHandler = ReferenceHandler.Preserve
                     };
 
-                    // Deserialize the root object first
-                    var rootObject = JsonSerializer.Deserialize<JsonDocument>(content, options);
-                    var itemsArray = rootObject.RootElement.GetProperty("$values");
-                    
-                    if (itemsArray.GetArrayLength() == 0)
+                    // Deserialize the JSON content into a list of OrderItem objects
+                    var orderItems = JsonSerializer.Deserialize<List<OrderItem>>(content, options);
+
+                    if (orderItems == null || orderItems.Count == 0)
                     {
                         return new JsonResult(new { success = false, message = "No items found" });
                     }
 
-                    var simplifiedItems = new List<object>();
-                    foreach (var item in itemsArray.EnumerateArray())
+                    // Simplify the items for the response
+                    var simplifiedItems = orderItems.Select(item => new
                     {
-                        var orderItem = item.Deserialize<OrderItem>(options);
-                        simplifiedItems.Add(new
-                        {
-                            itemName = orderItem.Item?.ItemName ?? "Unknown Item",
-                            quantity = orderItem.Quantity,
-                            price = orderItem.Price,
-                            total = orderItem.Price
-                        });
-                    }
+                        itemName = item.Item?.ItemName ?? "Unknown Item",
+                        quantity = item.Quantity,
+                        price = item.Price,
+                        total = item.Quantity * item.Price
+                    }).ToList();
 
                     return new JsonResult(new { success = true, items = simplifiedItems });
                 }
@@ -292,4 +272,10 @@ namespace CafeteriaOrderingFrontend.Pages
             public string Status { get; set; }
         }
     }
-} 
+
+    public class UpdateOrderStatusRequest
+    {
+        public int OrderId { get; set; }
+        public string Status { get; set; }
+    }
+}

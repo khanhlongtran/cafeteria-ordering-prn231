@@ -373,7 +373,7 @@ namespace ManagerAPI.Controllers
 
 
 
-        [HttpPut("{orderId}/status")]
+        [HttpPut("UpdateOrderStatus/{orderId}")]
         public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateStatusRequest request)
         {
             var order = await _context.Orders.FindAsync(orderId);
