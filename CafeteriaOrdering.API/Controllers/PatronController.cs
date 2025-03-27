@@ -434,5 +434,36 @@ namespace CafeteriaOrdering.API.Controllers
 
                 return Ok(restaurant);
             }
+
+        [HttpGet("order/{orderId}")]
+        public async Task<IActionResult> GetOrderDetails(int orderId)
+        {
+            var order = await _dbContext.Orders
+                .Where(o => o.OrderId == orderId)
+                .Select(o => new
+                {
+                    o.OrderId,
+                    o.OrderDate,
+                    o.Status,
+                    o.PaymentMethod,
+                    o.TotalAmount,
+                    o.AddressId,
+                    OrderItems = o.OrderItems.Select(oi => new
+                    {
+                        oi.OrderItemId,
+                        oi.ItemId,
+                        oi.Quantity,
+                        oi.Price
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (order == null)
+            {
+                return NotFound(new { Error = "Order not found" });
+            }
+
+            return Ok(order);
+        }
     }
 }
