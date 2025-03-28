@@ -191,6 +191,18 @@ namespace CafeteriaOrderingFrontend.Pages
                     IsSuccess = false;
                     Message = "Failed to filter revenue data.";
                 }
+
+                // Get top selling items
+                apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/ViewTopSellingItemsByManager?managerId={_userId}";
+                var topItemsResponse = await _httpClient.GetAsync(apiUrl);
+                if (topItemsResponse.IsSuccessStatusCode)
+                {
+                    var topItemsContent = await topItemsResponse.Content.ReadAsStringAsync();
+                    TopSellingItems = JsonSerializer.Deserialize<List<MenuItem>>(topItemsContent, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
             }
             catch (Exception ex)
             {
