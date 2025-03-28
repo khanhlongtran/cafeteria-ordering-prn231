@@ -52,68 +52,68 @@ namespace CafeteriaOrderingFrontend.Pages
                 // _httpClient.DefaultRequestHeaders.Clear();
                 // _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-                var apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/ViewOrder";
-                _logger.LogInformation("Requesting orders from: {Url}", apiUrl);
+                // var apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/ViewOrder";
+                // _logger.LogInformation("Requesting orders from: {Url}", apiUrl);
 
-                var response = await _httpClient.GetAsync(apiUrl);
-                var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation("Response status: {StatusCode}, Content: {Content}", response.StatusCode, content);
+                // var response = await _httpClient.GetAsync(apiUrl);
+                // var content = await response.Content.ReadAsStringAsync();
+                // _logger.LogInformation("Response status: {StatusCode}, Content: {Content}", response.StatusCode, content);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var options = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        ReferenceHandler = ReferenceHandler.Preserve,
-                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                    };
+                // if (response.IsSuccessStatusCode)
+                // {
+                //     var options = new JsonSerializerOptions
+                //     {
+                //         PropertyNameCaseInsensitive = true,
+                //         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                //         ReferenceHandler = ReferenceHandler.Preserve,
+                //         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                //     };
 
-                    // Parse the root object to get the $values array
-                    using var doc = JsonDocument.Parse(content);
-                    var root = doc.RootElement;
-                    var values = root.GetProperty("$values");
+                //     // Parse the root object to get the $values array
+                //     using var doc = JsonDocument.Parse(content);
+                //     var root = doc.RootElement;
+                //     var values = root.GetProperty("$values");
                     
-                    Orders = JsonSerializer.Deserialize<List<Order>>(values.GetRawText(), options) ?? new List<Order>();
-                    _logger.LogInformation("Successfully deserialized {Count} orders", Orders.Count);
-                }
-                else
-                {
-                    ErrorMessage = "Failed to load orders. Please try again later.";
-                    _logger.LogError("Failed to load orders. Status code: {StatusCode}, Content: {Content}", response.StatusCode, content);
-                }
+                //     Orders = JsonSerializer.Deserialize<List<Order>>(values.GetRawText(), options) ?? new List<Order>();
+                //     _logger.LogInformation("Successfully deserialized {Count} orders", Orders.Count);
+                // }
+                // else
+                // {
+                //     ErrorMessage = "Failed to load orders. Please try again later.";
+                //     _logger.LogError("Failed to load orders. Status code: {StatusCode}, Content: {Content}", response.StatusCode, content);
+                // }
 
-                // Get revenue details for the current month
-                var currentDate = DateTime.Now;
-                var firstDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
-                var client = _clientFactory.CreateClient();
-                var responseDetails = await client.GetAsync($"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/GetRevenueDetails?managerId=1&filterType=month&date={firstDayOfMonth:yyyy-MM-dd}");
+                // // Get revenue details for the current month
+                // var currentDate = DateTime.Now;
+                // var firstDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
+                // var client = _clientFactory.CreateClient();
+                // var responseDetails = await client.GetAsync($"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/GetRevenueDetails?managerId=1&filterType=month&date={firstDayOfMonth:yyyy-MM-dd}");
                 
-                if (responseDetails.IsSuccessStatusCode)
-                {
-                    var contentDetails = await responseDetails.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<RevenueResponse>(contentDetails);
+                // if (responseDetails.IsSuccessStatusCode)
+                // {
+                //     var contentDetails = await responseDetails.Content.ReadAsStringAsync();
+                //     var result = JsonSerializer.Deserialize<RevenueResponse>(contentDetails);
                     
-                    // get last generated report
-                    var lastReportResponse = 
+                //     // get last generated report
+                //     var lastReportResponse = 
 
-                    RevenueReports = result.Details;
-                    TotalRevenue = result.TotalRevenue;
-                    TotalOrders = RevenueReports.Sum(r => r.TotalOrders);
-                    GeneratedAt = RevenueReports.FirstOrDefault()?.GeneratedAt;
-                }
+                //     RevenueReports = result.Details;
+                //     TotalRevenue = result.TotalRevenue;
+                //     TotalOrders = RevenueReports.Sum(r => r.TotalOrders);
+                //     GeneratedAt = RevenueReports.FirstOrDefault()?.GeneratedAt;
+                // }
 
-                // Get top selling items
-                apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/ViewTopSellingItemsByManager?managerId={_userId}";
-                var topItemsResponse = await _httpClient.GetAsync(apiUrl);
-                if (topItemsResponse.IsSuccessStatusCode)
-                {
-                    var topItemsContent = await topItemsResponse.Content.ReadAsStringAsync();
-                    TopSellingItems = JsonSerializer.Deserialize<List<MenuItem>>(topItemsContent, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
-                }
+                // // Get top selling items
+                // apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/ViewTopSellingItemsByManager?managerId={_userId}";
+                // var topItemsResponse = await _httpClient.GetAsync(apiUrl);
+                // if (topItemsResponse.IsSuccessStatusCode)
+                // {
+                //     var topItemsContent = await topItemsResponse.Content.ReadAsStringAsync();
+                //     TopSellingItems = JsonSerializer.Deserialize<List<MenuItem>>(topItemsContent, new JsonSerializerOptions
+                //     {
+                //         PropertyNameCaseInsensitive = true
+                //     });
+                // }
 
                 return Page();
             }
