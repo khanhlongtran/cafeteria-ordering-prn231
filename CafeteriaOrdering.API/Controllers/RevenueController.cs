@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace ManagerAPI.Controllers
 {
-    [Authorize("MANAGER")]
+    //[Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]  // Thiếu [ApiController], thêm vào để tránh lỗi Model Binding
     public class RevenueController : ControllerBase
@@ -125,6 +125,29 @@ namespace ManagerAPI.Controllers
             return Ok(items);
         }
 
+        //[HttpGet("ViewTopSellingItemsByManager")]
+        //public async Task<IActionResult> ViewTopSellingItemsByManager([FromQuery] int managerId)
+        //{
+        //    if (_contexts.MenuItems == null)
+        //        return BadRequest(new { message = "MenuItems table not found" });
+
+        //    var items = await _contexts.MenuItems
+        //        .Where(m => m.Menu.ManagerId == managerId)
+        //        .OrderByDescending(m => m.CountItemsSold)
+        //        .ToListAsync();
+
+        //    if (!items.Any())
+        //        return NotFound(new { message = "No items found for this menu" });
+
+        //    // Tính tổng số tiền từ số lượng món ăn bán ra và giá của mỗi món
+        //    var totalRevenue = items.Sum(m => m.CountItemsSold * m.Price);
+
+        //    return Ok(new
+        //    {
+        //        TotalRevenue = totalRevenue,
+        //        Items = items
+        //    });
+        //}
 
         // ngày thì nhập: day và nhập đúng ngày
         // tháng thì nhập : month và nhập ngày đầu tháng (2025-03-01)
