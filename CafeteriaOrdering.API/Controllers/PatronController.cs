@@ -553,5 +553,56 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(defaultAddress);
         }
 
+        [HttpGet("restaurant/menu")]
+        public async Task<IActionResult> GetRestaurantByMenuName([FromQuery] string menuName)
+        {
+            if (string.IsNullOrWhiteSpace(menuName))
+            {
+                return BadRequest(new { message = "Tên menu không được để trống." });
+            }
+
+            var restaurant = await _dbContext.Menus
+                .Include(m => m.Manager)
+                .ThenInclude(u => u.Addresses)
+                .Include(m => m.MenuItems)
+                .Where(m => m.MenuName.Contains(menuName)) // Tìm menu theo tên
+                .Select(m => new
+                {
+                    MenuId = m.MenuId,
+                    MenuName = m.MenuName,
+                    IsStatus = m.IsStatus,
+                    UserId = m.Manager.UserId,
+                    FullName = m.Manager.FullName,
+                    Phone = m.Manager.Phone,
+                    Addresses = m.Manager.Addresses.Select(a => new
+                    {
+                        AddressId = a.AddressId,
+                        AddressLine = a.AddressLine,
+                        City = a.City,
+                        State = a.State,
+                        ZipCode = a.ZipCode,
+                        GeoLocation = a.GeoLocation,
+                        Image = a.Image
+                    }).ToList(),
+                    Menus = m.MenuItems.Select(mi => new
+                    {
+                        ItemId = mi.ItemId,
+                        ItemName = mi.ItemName,
+                        Price = mi.Price,
+                        Description = mi.Description,
+                        ItemType = mi.ItemType,
+                        IsStatus = mi.IsStatus,
+                        Image = mi.Image
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            if (restaurant == null)
+            {
+                return NotFound(new { message = "Không tìm thấy nhà hàng có menu này." });
+            }
+
+            return Ok(restaurant);
+        }
     }
 }
