@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace ManagerAPI.Controllers
 {
-    //[Authorize("MANAGER")]
+    [Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]  // Thiếu [ApiController], thêm vào để tránh lỗi Model Binding
     public class RevenueController : ControllerBase

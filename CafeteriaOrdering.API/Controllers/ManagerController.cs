@@ -9,10 +9,11 @@ using CafeteriaOrdering.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using CafeteriaOrdering.API.DTO;
 using CafeteriaOrdering.API.Constants;
+using System.Security.Claims;
 
 namespace ManagerAPI.Controllers
 {
-    //[Authorize("MANAGER")]
+    [Authorize("MANAGER")]
     [Route("api/Manager")]
     [ApiController]
     public class ManagerController : ControllerBase
@@ -372,33 +373,6 @@ namespace ManagerAPI.Controllers
 
 
 
-        //[HttpPut("UpdateOrderStatus/{orderId}")]
-        //public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateStatusRequest request)
-        //{
-        //    var order = await _context.Orders.FindAsync(orderId);
-        //    if (order == null)
-        //    {
-        //        return NotFound(new { message = "Order not found" });
-        //    }
-
-        //    if (request.Status == OrderConstants.OrderStatus.REQUEST_DELIVERY.ToString())
-        //    {
-        //        order.Status = OrderConstants.OrderStatus.DELIVERY_ACCEPTED.ToString();
-
-        //        //// Chèn vào bảng Deliveries
-        //        //var delivery = new Delivery { OrderId = orderId };
-        //        //_context.Deliveries.Add(delivery);
-        //    }
-
-        //    order.Status = request.Status;
-        //    order.UpdatedAt = DateTime.UtcNow;
-
-        //    await _context.SaveChangesAsync();
-
-        //    return Ok(new { message = "Order status updated successfully" });
-        //}
-
-
         [HttpPut("UpdateOrderStatus/{orderId}")]
         public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateStatusRequest request)
         {
@@ -408,7 +382,6 @@ namespace ManagerAPI.Controllers
                 return NotFound(new { message = "Order not found" });
             }
 
-            // Xử lý khi trạng thái là REQUEST_DELIVERY
             if (request.Status == OrderConstants.OrderStatus.REQUEST_DELIVERY.ToString())
             {
                 order.Status = OrderConstants.OrderStatus.DELIVERY_ACCEPTED.ToString();
@@ -417,47 +390,13 @@ namespace ManagerAPI.Controllers
                 //var delivery = new Delivery { OrderId = orderId };
                 //_context.Deliveries.Add(delivery);
             }
-            // Xử lý khi trạng thái là Completed
-            else if (request.Status == OrderConstants.OrderStatus.COMPLETED.ToString())
-            {
-                order.Status = OrderConstants.OrderStatus.COMPLETED.ToString();
 
-                // Lấy thông tin managerId từ menu của món ăn trong đơn hàng
-                var menuItem = await _context.OrderItems
-                    .Where(oi => oi.OrderId == orderId)
-                    .Select(oi => oi.Item.Menu)  // Lấy menu từ order item
-                    .FirstOrDefaultAsync();
-
-                if (menuItem == null)
-                {
-                    return BadRequest(new { message = "Menu item not found for the order" });
-                }
-
-                var managerId = menuItem.ManagerId;  // Lấy managerId từ menu
-                var totalOrder = 1;  // Tính tổng số đơn hàng, giả sử mỗi đơn hàng là 1
-                var totalRevenue = order.TotalAmount;  // Lấy total_amount từ đơn hàng
-
-                // Thêm vào bảng revenue_reports
-                var revenueReport = new RevenueReport
-                {
-                    ManagerId = managerId,
-                    ReportDate = DateTime.UtcNow,  // Ngày hiện tại
-                    TotalOrders = totalOrder,
-                    TotalRevenue = totalRevenue,
-                    GeneratedAt = DateTime.UtcNow  // Ngày tạo báo cáo
-                };
-                _context.RevenueReports.Add(revenueReport);
-            }
-            else
-            {
-                order.Status = request.Status;
-            }
-
+            order.Status = request.Status;
             order.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Cập nhật trạng thái đơn hàng thành công" });
+            return Ok(new { message = "Order status updated successfully" });
         }
 
 
@@ -477,6 +416,7 @@ namespace ManagerAPI.Controllers
                 .Where(o => o.OrderItems.Any(oi => oi.Item.Menu.ManagerId == managerId))
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Item)
+                .Include(o => o.Address) // Thêm Address để lấy AddressLine
                 .ToList();
 
             if (!orders.Any())
@@ -486,6 +426,7 @@ namespace ManagerAPI.Controllers
 
             return Ok(orders);
         }
+
 
 
 
