@@ -26,6 +26,7 @@ namespace CafeteriaOrderingFrontend.Pages
         public List<MenuItem> TopSellingItems { get; set; } = new();
         public decimal TotalRevenue { get; set; }
         public int TotalOrders { get; set; }
+        public DateTime? GeneratedAt { get; set; }
         public string Message { get; set; }
         public bool IsSuccess { get; set; }
         public List<Order> Orders { get; set; } = new();
@@ -93,17 +94,25 @@ namespace CafeteriaOrderingFrontend.Pages
                     var contentDetails = await responseDetails.Content.ReadAsStringAsync();
                     var result = JsonSerializer.Deserialize<RevenueResponse>(contentDetails);
                     
+                    // get last generated report
+                    var lastReportResponse = 
+
                     RevenueReports = result.Details;
                     TotalRevenue = result.TotalRevenue;
                     TotalOrders = RevenueReports.Sum(r => r.TotalOrders);
+                    GeneratedAt = RevenueReports.FirstOrDefault()?.GeneratedAt;
                 }
 
                 // Get top selling items
-                var topItemsResponse = await client.GetAsync($"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/ViewTopSellingItemsByMenu?menuId=1");
+                apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/ViewTopSellingItemsByManager?managerId={_userId}";
+                var topItemsResponse = await _httpClient.GetAsync(apiUrl);
                 if (topItemsResponse.IsSuccessStatusCode)
                 {
                     var topItemsContent = await topItemsResponse.Content.ReadAsStringAsync();
-                    TopSellingItems = JsonSerializer.Deserialize<List<MenuItem>>(topItemsContent);
+                    TopSellingItems = JsonSerializer.Deserialize<List<MenuItem>>(topItemsContent, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
                 }
 
                 return Page();
@@ -150,13 +159,17 @@ namespace CafeteriaOrderingFrontend.Pages
         {
             try
             {
+                var _token = HttpContext.Session.GetString("Token");
+                var _userId = HttpContext.Session.GetString("UserId");
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_token}");
+
                 var startDate = new DateTime(year, month, 1);
                 var endDate = startDate.AddMonths(1).AddDays(-1);
 
-                var client = _clientFactory.CreateClient();
                 var apiUrl = $"{_configuration["ApiSettings:BaseUrl"]}/api/Manager/FilterRevenueByTime?startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}";
 
-                var response = await client.GetAsync(apiUrl);
+                var response = await _httpClient.GetAsync(apiUrl);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -166,6 +179,8 @@ namespace CafeteriaOrderingFrontend.Pages
                         PropertyNameCaseInsensitive = true
                     });
 
+                    var latestReport = RevenueReports.OrderByDescending(r => r.GeneratedAt).FirstOrDefault();
+                    GeneratedAt = latestReport?.GeneratedAt;
                     TotalRevenue = RevenueReports.Sum(r => r.TotalRevenue);
                     TotalOrders = RevenueReports.Sum(r => r.TotalOrders);
                     IsSuccess = true;
