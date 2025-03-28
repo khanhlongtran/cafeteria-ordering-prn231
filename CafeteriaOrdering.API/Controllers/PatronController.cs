@@ -363,7 +363,7 @@ namespace CafeteriaOrdering.API.Controllers
             await _dbContext.SaveChangesAsync();
             return Ok(new { message = "GeoLocation updated successfully" });
         }
-
+        [Authorize("PATRON")]
         [HttpGet("item/{itemId}")]
         public async Task<IActionResult> GetMenuItemById(int itemId)
         {
@@ -389,7 +389,7 @@ namespace CafeteriaOrdering.API.Controllers
 
             return Ok(menuItem);
         }
-
+        [Authorize("PATRON")]
         [HttpGet("restaurant/{addressId}")]
         public async Task<IActionResult> GetAddresses(int addressId)
         {
@@ -436,7 +436,7 @@ namespace CafeteriaOrdering.API.Controllers
 
                 return Ok(restaurant);
             }
-
+        [Authorize("PATRON")]
         [HttpGet("restaurant/menu/{menuId}")]
         public async Task<IActionResult> GetRestaurantByMenuId(int menuId)
         {
@@ -484,7 +484,7 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(restaurant);
         }
 
-
+        [Authorize("PATRON")]
         [HttpGet("order/{orderId}")]
         public async Task<IActionResult> GetOrderDetails(int orderId)
         {
@@ -517,7 +517,7 @@ namespace CafeteriaOrdering.API.Controllers
 
             return Ok(order);
         }
-
+        [Authorize("PATRON")]
         [HttpGet("GetDefaultAddress/{userId}")]
         public async Task<IActionResult> GetDefaultAddress(int userId)
         {
@@ -552,7 +552,7 @@ namespace CafeteriaOrdering.API.Controllers
 
             return Ok(defaultAddress);
         }
-
+        [Authorize("PATRON")]
         [HttpGet("restaurant/menu")]
         public async Task<IActionResult> GetRestaurantByMenuName([FromQuery] string menuName)
         {

@@ -47,7 +47,7 @@ namespace CafeteriaOrdering.API
             builder.Services.AddAuthorization(options =>
             {
                 options.AddPolicy("MANAGER", policy => policy.RequireClaim("Role", "MANAGER"));
-                options.AddPolicy("DELIVER  ", policy => policy.RequireClaim("Role", "DELIVER"));
+                options.AddPolicy("DELIVER", policy => policy.RequireClaim("Role", "DELIVER"));
                 options.AddPolicy("PATRON", policy => policy.RequireClaim("Role", "PATRON"));
             });
 

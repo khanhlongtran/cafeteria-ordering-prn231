@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CafeteriaOrdering.API.Controllers
 {
-    //[Authorize("DELIVER")]
+    [Authorize("DELIVER")]
     [Route("api/v1/delivery")]
     [ApiController]
     public class MealDeliveryController : ControllerBase
