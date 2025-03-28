@@ -29,7 +29,7 @@ namespace CafeteriaOrdering.API
             builder.Services.AddDbContext<CafeteriaOrderingDBContext>(options =>
                 options.UseSqlServer(connectionString)
             );
-
+            builder.WebHost.UseUrls("http://0.0.0.0:5110");
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {

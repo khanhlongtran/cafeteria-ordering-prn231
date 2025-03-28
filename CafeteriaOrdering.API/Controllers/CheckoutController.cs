@@ -19,11 +19,13 @@ namespace CafeteriaOrdering.API.Controllers
         private readonly ZaloPayService _zaloPayService;
         private readonly CafeteriaOrderingDBContext _context;
         private readonly VnpayHelper _vnpayHelper;
-        public CheckoutController(ZaloPayService zaloPayService, CafeteriaOrderingDBContext context,IOptions<VnpayConfig> config, VnpayHelper vnpayHelper)
+        private VnpayConfig _config;
+        public CheckoutController(ZaloPayService zaloPayService, CafeteriaOrderingDBContext context, IOptions<VnpayConfig> config, VnpayHelper vnpayHelper)
         {
             _zaloPayService = zaloPayService;
             _context = context;
             _vnpayHelper = vnpayHelper;
+            _config = config.Value;
         }
         //[Authorize]
         [HttpPost("BankingTranfer")]
@@ -128,8 +130,12 @@ namespace CafeteriaOrdering.API.Controllers
             // Lưu CreateOrderRequest vào IMemoryCache với thời gian sống 30 phút
             memoryCache.Set(tempTxnRef, orderRequest, TimeSpan.FromMinutes(30));
 
+            string returnUrl = string.IsNullOrWhiteSpace(request.Payment.ReturnUrl)
+            ? _config.vnp_Returnurl
+            : request.Payment.ReturnUrl;
+
             // Tạo URL thanh toán
-            string paymentUrl = _vnpayHelper.CreatePaymentUrl(paymentRequest, totalAmount, tempTxnRef);
+            string paymentUrl = _vnpayHelper.CreatePaymentUrl(paymentRequest, totalAmount, tempTxnRef, returnUrl);
             return Ok(new PaymentResponse
             {
                 Success = true,
@@ -141,7 +147,6 @@ namespace CafeteriaOrdering.API.Controllers
         public async Task<IActionResult> PaymentCallback([FromServices] IMemoryCache memoryCache)
         {
             var vnp_Params = Request.Query.ToDictionary(k => k.Key, v => v.Value.ToString());
-
             string hashSecret = _vnpayHelper.GetHashSecret();
             string vnp_SecureHash = vnp_Params.ContainsKey("vnp_SecureHash") ? vnp_Params["vnp_SecureHash"] : "";
             vnp_Params.Remove("vnp_SecureHash");
@@ -210,13 +215,38 @@ namespace CafeteriaOrdering.API.Controllers
 
                 memoryCache.Remove(vnp_TxnRef);
 
-                return Ok(new { Success = true, Message = "Thanh toán thành công", OrderId = order.OrderId, Amount = amount });
+                //return Ok(new { Success = true, Message = "Thanh toán thành công", OrderId = order.OrderId, Amount = amount });
+                return HandleResponse(true, order.OrderId, amount);
+               // return Ok();
             }
             else
             {
                 memoryCache.Remove(vnp_TxnRef);
-                return BadRequest(new { Success = false, Message = "Thanh toán thất bại hoặc bị hủy" });
+                //return BadRequest(new { Success = false, Message = "Thanh toán thất bại hoặc bị hủy" });
+                return HandleResponse(false);
+               // return BadRequest(new { Success = false, });
             }
         }
+
+        private IActionResult HandleResponse(bool success, int orderId = 0, decimal amount = 0)
+        {
+            // Kiểm tra User-Agent
+            bool isAndroidApp = Request.Headers["User-Agent"].ToString().Contains("Android");
+
+            string successUrl = isAndroidApp ? "myapp://payment-success" : "url_cho_web_success";
+            string failedUrl = isAndroidApp ? "myapp://payment-failed" : "url_cho_web_fail";
+
+            string redirectUrl = success ? successUrl : failedUrl;
+
+            if (isAndroidApp)
+            {
+                return Content($"<script>window.location.href='{redirectUrl}';</script>", "text/html");
+            }
+            else
+            {
+                return Redirect(redirectUrl);
+            }
+        }
+
     }
 }

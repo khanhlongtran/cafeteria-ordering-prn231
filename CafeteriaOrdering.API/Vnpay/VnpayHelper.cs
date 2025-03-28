@@ -26,7 +26,7 @@ namespace CafeteriaOrdering.API.Vnpay
         {
             return _config.vnp_HashSecret;
         }
-        public string CreatePaymentUrl(PaymentRequest request, decimal amount, string tempTxnRef)
+        public string CreatePaymentUrl(PaymentRequest request, decimal amount, string tempTxnRef, string returnUrl)
         {
             SortedList<string, string> vnp_Params = new SortedList<string, string>
             {
@@ -39,7 +39,7 @@ namespace CafeteriaOrdering.API.Vnpay
                 { "vnp_OrderInfo", request.OrderInfo ?? "Thanh toan don hang"},
                 { "vnp_OrderType", "other" },
                 { "vnp_Locale", "vn" },
-                { "vnp_ReturnUrl", _config.vnp_Returnurl },
+                { "vnp_ReturnUrl", returnUrl }, //_config.vnp_Returnurl
                 { "vnp_IpAddr", "127.0.0.1" },
                 { "vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss") }
             };

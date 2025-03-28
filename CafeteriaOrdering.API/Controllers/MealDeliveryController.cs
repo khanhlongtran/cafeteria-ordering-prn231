@@ -4,6 +4,8 @@ using CafeteriaOrdering.API.Models;
 using CafeteriaOrdering.API.Constants;
 using CafeteriaOrdering.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using CafeteriaOrdering.API.DTO;
+using Microsoft.EntityFrameworkCore;
 
 namespace CafeteriaOrdering.API.Controllers
 {
@@ -92,6 +94,151 @@ namespace CafeteriaOrdering.API.Controllers
             _service.notifyUpdateOrderStatus(id, order.Status);
 
             return Ok("Successful");
+        }
+
+        [HttpGet("GetAllOrders")]
+        public async Task<ActionResult<IEnumerable<UserOrderDTO>>> GetUserOrders()
+        {
+            var userOrders = await _context.Orders
+                .Where(o => o.Status == "REQUEST_DELIVERY")  
+                .Include(o => o.OrderItems)   
+                .Include(o => o.Address)        
+                .Select(o => new UserOrderDTO
+                {
+                    UserId = o.UserId,
+                    FullName = o.User.FullName,
+                    Number = o.User.Phone,
+                    OrderId = o.OrderId,
+                    OrderName = string.Join(", ", o.OrderItems.Select(oi => oi.Item.ItemName)),  
+                    TotalAmount = o.TotalAmount,
+                    AddressId = o.Address.AddressId,
+                    AddressLine = o.Address.AddressLine,
+                    City = o.Address.City,
+                    State = o.Address.State,
+                    GeoLocation = o.Address.GeoLocation
+                })
+                .ToListAsync();
+
+            if (userOrders == null || !userOrders.Any())
+            {
+                return NotFound("No orders found.");
+            }
+
+            return Ok(userOrders);
+        }
+        [HttpPut("UpdateOrderStatus/{orderId}")]
+        public async Task<ActionResult> UpdateOrderStatus(int orderId, [FromBody] string newStatus)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null)
+            {
+                return NotFound("Order not found.");
+            }
+
+
+            var delivery = await _context.Deliveries
+                .FirstOrDefaultAsync(d => d.OrderId == orderId);
+
+
+            order.Status = newStatus;
+            order.UpdatedAt = DateTime.Now;
+
+  
+            if (delivery != null)
+            {
+                delivery.DeliveryStatus = newStatus;
+                delivery.UpdatedAt = DateTime.Now;
+
+                switch (newStatus)
+                {
+                    case "DELIVERY_ACCEPTED":
+                        delivery.PickupTime ??= DateTime.Now; 
+                        break;
+                    case "COMPLETED":
+                        delivery.DeliveryTime ??= DateTime.Now; 
+                        break;
+                    case "CANCELED":
+                        delivery.DeliveryTime = null;
+                        break;
+                }
+            }
+
+            try
+            {
+   
+                _context.Orders.Update(order);
+                if (delivery != null)
+                {
+                    _context.Deliveries.Update(delivery);
+                }
+                await _context.SaveChangesAsync();
+
+                return Ok("Order and Delivery status updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetOrderInProgessDeliveries/{delivererUserId}")]
+        public async Task<ActionResult<IEnumerable<DeliveryOrderDTO>>> GetDeliveriesByUser(int delivererUserId)
+        {
+            var deliveries = await _context.Deliveries
+                .Where(d => d.DeliverUserId == delivererUserId
+                    && d.DeliveryStatus != "REQUEST_DELIVERY"
+                    && d.DeliveryStatus != "COMPLETED")
+                .Select(d => new DeliveryOrderDTO
+                {
+                    DeliveryId = d.DeliveryId,
+                    OrderId = d.OrderId,
+                    OrderName = string.Join(", ", d.Order.OrderItems.Select(oi => oi.Item.ItemName)),
+                    PatronName = d.Order.User.FullName,
+                    Number = d.Order.User.Phone,
+                    TotalAmount = d.Order.TotalAmount,
+                    Address = d.Order.Address.AddressLine,
+                    DeliverUserId = d.DeliverUserId,
+                    PickupTime = d.PickupTime,
+                    DeliveryTime = d.DeliveryTime,
+                    DeliveryStatus = d.DeliveryStatus,
+                    CreatedAt = d.CreatedAt,
+                    UpdatedAt = d.UpdatedAt
+                })
+                .ToListAsync();
+
+            if (deliveries == null || !deliveries.Any())
+            {
+                return NotFound("No deliveries found for this user.");
+            }
+
+            return Ok(deliveries);
+        }
+
+        [HttpPost("CreateDelivery")]
+        public async Task<ActionResult<Delivery>> PostDelivery([FromBody] DeliveryCreateDto deliveryDto)
+        {
+            var order = await _context.Orders.FindAsync(deliveryDto.OrderId);
+            if (order == null)
+            {
+                return NotFound("Order not found.");
+            }
+
+            var delivery = new Delivery
+            {
+                OrderId = deliveryDto.OrderId,
+                DeliverUserId = deliveryDto.DeliverUserId,
+                PickupTime = deliveryDto.PickupTime,
+                DeliveryTime = deliveryDto.DeliveryTime,
+                DeliveryStatus = "DELIVERY_ACCEPTED", 
+                CreatedAt = deliveryDto.CreatedAt,
+                UpdatedAt = deliveryDto.UpdatedAt
+            };
+
+
+            _context.Deliveries.Add(delivery);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(PostDelivery), new { id = delivery.DeliveryId }, delivery);
         }
     }
 }

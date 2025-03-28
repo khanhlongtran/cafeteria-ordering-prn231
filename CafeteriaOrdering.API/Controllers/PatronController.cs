@@ -65,7 +65,7 @@ namespace CafeteriaOrdering.API.Controllers
             return Ok(addresses);
         }
 
-        [Authorize("PATRON")]
+       // [Authorize("PATRON")]
         [HttpPost("MyAccount/ChangeAddress/{userId}")]
         public async Task<IActionResult> ChangeAddress(int userId, [FromBody] AddressRequest request)
         {
@@ -168,7 +168,7 @@ namespace CafeteriaOrdering.API.Controllers
         //    return Ok(new { Message = "Xóa địa chỉ thành công.", AddressId = addressId });
         //}
 
-        [Authorize("PATRON")]
+        //[Authorize("PATRON")]
         [HttpGet("MyOrder/{userId}")]
         public async Task<IActionResult> GetMyOrders(int userId)
         {
@@ -184,6 +184,7 @@ namespace CafeteriaOrdering.API.Controllers
                     o.AddressId,
                     o.CreatedAt,
                     o.UpdatedAt,
+                    OrderTitle = string.Join(", ", o.OrderItems.Select(oi => oi.Item.ItemName)),
                     Address = new
                     {
                         o.Address.AddressLine,
@@ -194,6 +195,7 @@ namespace CafeteriaOrdering.API.Controllers
                     OrderItems = o.OrderItems.Select(oi => new
                     {
                         oi.ItemId,
+                        oi.Item.ItemName,
                         oi.Quantity,
                         oi.Price
                     }),
@@ -435,6 +437,54 @@ namespace CafeteriaOrdering.API.Controllers
                 return Ok(restaurant);
             }
 
+        [HttpGet("restaurant/menu/{menuId}")]
+        public async Task<IActionResult> GetRestaurantByMenuId(int menuId)
+        {
+            var restaurant = await _dbContext.Menus
+                .Include(m => m.Manager)
+                .ThenInclude(u => u.Addresses)
+                .Include(m => m.MenuItems)
+                .Where(m => m.MenuId == menuId)
+                .Select(m => new
+                {
+                    MenuId = m.MenuId,
+                    MenuName = m.MenuName,
+                    IsStatus = m.IsStatus,
+                    UserId = m.Manager.UserId,
+                    FullName = m.Manager.FullName,
+                    Phone = m.Manager.Phone,
+                    Addresses = m.Manager.Addresses.Select(a => new
+                    {
+                        AddressId = a.AddressId,
+                        AddressLine = a.AddressLine,
+                        City = a.City,
+                        State = a.State,
+                        ZipCode = a.ZipCode,
+                        GeoLocation = a.GeoLocation,
+                        Image = a.Image
+                    }).ToList(),
+                    Menus = m.MenuItems.Select(mi => new
+                    {
+                        ItemId = mi.ItemId,
+                        ItemName = mi.ItemName,
+                        Price = mi.Price,
+                        Description = mi.Description,
+                        ItemType = mi.ItemType,
+                        IsStatus = mi.IsStatus,
+                        Image = mi.Image
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (restaurant == null)
+            {
+                return NotFound(new { message = "Restaurant not found" });
+            }
+
+            return Ok(restaurant);
+        }
+
+
         [HttpGet("order/{orderId}")]
         public async Task<IActionResult> GetOrderDetails(int orderId)
         {
@@ -448,10 +498,12 @@ namespace CafeteriaOrdering.API.Controllers
                     o.PaymentMethod,
                     o.TotalAmount,
                     o.AddressId,
+                    OrderTitle = string.Join(", ", o.OrderItems.Select(oi => oi.Item.ItemName)),
                     OrderItems = o.OrderItems.Select(oi => new
                     {
                         oi.OrderItemId,
                         oi.ItemId,
+                        oi.Item.ItemName,
                         oi.Quantity,
                         oi.Price
                     }).ToList()
@@ -465,5 +517,41 @@ namespace CafeteriaOrdering.API.Controllers
 
             return Ok(order);
         }
+
+        [HttpGet("GetDefaultAddress/{userId}")]
+        public async Task<IActionResult> GetDefaultAddress(int userId)
+        {
+            var user = await _dbContext.Users
+                .Include(u => u.Addresses)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (user == null)
+            {
+                return NotFound("User không tồn tại.");
+            }
+
+            var defaultAddress = user.Addresses
+                .Where(a => a.IsDefault)
+                .Select(a => new
+                {
+                    a.AddressId,
+                    a.AddressLine,
+                    a.City,
+                    a.State,
+                    a.ZipCode,
+                    a.GeoLocation,
+                    a.CreatedAt,
+                    a.UpdatedAt
+                })
+                .FirstOrDefault();
+
+            if (defaultAddress == null)
+            {
+                return NotFound("Không tìm thấy địa chỉ mặc định.");
+            }
+
+            return Ok(defaultAddress);
+        }
+
     }
 }

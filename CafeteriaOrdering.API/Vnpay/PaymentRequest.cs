@@ -6,6 +6,8 @@ namespace CafeteriaOrdering.API.Vnpay
     {
         public string OrderInfo { get; set; }
         public string BankCode { get; set; }
+
+        public string ReturnUrl { get; set; }
     }
     public class PaymentResponse
     {
