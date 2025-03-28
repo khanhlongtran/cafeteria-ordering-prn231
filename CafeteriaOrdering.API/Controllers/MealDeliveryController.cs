@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using CafeteriaOrdering.API.Models;
 using CafeteriaOrdering.API.Constants;
@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CafeteriaOrdering.API.Controllers
 {
-    [Authorize("DELIVER")]
+    //[Authorize("DELIVER")]
     [Route("api/v1/delivery")]
     [ApiController]
     public class MealDeliveryController : ControllerBase
@@ -129,33 +129,34 @@ namespace CafeteriaOrdering.API.Controllers
         [HttpPut("UpdateOrderStatus/{orderId}")]
         public async Task<ActionResult> UpdateOrderStatus(int orderId, [FromBody] string newStatus)
         {
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Orders
+        .Include(o => o.OrderItems)
+        .ThenInclude(oi => oi.Item)
+        .ThenInclude(mi => mi.Menu)
+        .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
             if (order == null)
             {
                 return NotFound("Order not found.");
             }
 
-
-            var delivery = await _context.Deliveries
-                .FirstOrDefaultAsync(d => d.OrderId == orderId);
-
+            var delivery = await _context.Deliveries.FirstOrDefaultAsync(d => d.OrderId == orderId);
 
             order.Status = newStatus;
-            order.UpdatedAt = DateTime.Now;
+            order.UpdatedAt = DateTime.UtcNow;
 
-  
             if (delivery != null)
             {
                 delivery.DeliveryStatus = newStatus;
-                delivery.UpdatedAt = DateTime.Now;
+                delivery.UpdatedAt = DateTime.UtcNow;
 
                 switch (newStatus)
                 {
                     case "DELIVERY_ACCEPTED":
-                        delivery.PickupTime ??= DateTime.Now; 
+                        delivery.PickupTime ??= DateTime.UtcNow;
                         break;
                     case "COMPLETED":
-                        delivery.DeliveryTime ??= DateTime.Now; 
+                        delivery.DeliveryTime ??= DateTime.UtcNow;
                         break;
                     case "CANCELED":
                         delivery.DeliveryTime = null;
@@ -163,17 +164,60 @@ namespace CafeteriaOrdering.API.Controllers
                 }
             }
 
+    
+            if (newStatus == "COMPLETED")
+            {
+                var revenueData = new Dictionary<int, (int TotalOrders, decimal TotalRevenue)>();
+
+                foreach (var orderItem in order.OrderItems)
+                {
+                    var menuItem = orderItem.Item;
+                    int managerId = orderItem.Item.Menu.ManagerId;
+                    decimal itemRevenue = orderItem.Price;
+
+                    menuItem.CountItemsSold = (menuItem.CountItemsSold ?? 0) + orderItem.Quantity;
+                    if (revenueData.ContainsKey(managerId))
+                    {
+                        revenueData[managerId] = (
+                            revenueData[managerId].TotalOrders + orderItem.Quantity,
+                            revenueData[managerId].TotalRevenue + itemRevenue
+                        );
+                    }
+                    else
+                    {
+                        revenueData[managerId] = (orderItem.Quantity, itemRevenue);
+                    }
+                }
+
+                foreach (var entry in revenueData)
+                {
+                    int managerId = entry.Key;
+                    int totalOrders = entry.Value.TotalOrders;
+                    decimal totalRevenue = entry.Value.TotalRevenue;
+
+                    var revenueReport = new RevenueReport
+                    {
+                        ManagerId = managerId,
+                        ReportDate = DateTime.UtcNow,
+                        TotalOrders = totalOrders,
+                        TotalRevenue = totalRevenue,
+                        GeneratedAt = DateTime.UtcNow
+                    };
+
+                    _context.RevenueReports.Add(revenueReport);
+                }
+            }
+
             try
             {
-   
                 _context.Orders.Update(order);
                 if (delivery != null)
                 {
                     _context.Deliveries.Update(delivery);
                 }
-                await _context.SaveChangesAsync();
 
-                return Ok("Order and Delivery status updated successfully.");
+                await _context.SaveChangesAsync();
+                return Ok("Order, Delivery status, and RevenueReport updated successfully.");
             }
             catch (Exception ex)
             {
