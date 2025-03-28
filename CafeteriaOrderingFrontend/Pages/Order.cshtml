@@ -51,15 +51,7 @@
                                             (string.Equals(status.Value, "CAFETERIA_ACCEPTED", StringComparison.OrdinalIgnoreCase) || 
                                              string.Equals(status.Value, "CAFETERIA_REJECTED", StringComparison.OrdinalIgnoreCase))) ||
                                         (string.Equals(order.Status, "CAFETERIA_ACCEPTED", StringComparison.OrdinalIgnoreCase) && 
-                                            string.Equals(status.Value, "REQUEST_DELIVERY", StringComparison.OrdinalIgnoreCase)) ||
-                                        (string.Equals(order.Status, "REQUEST_DELIVERY", StringComparison.OrdinalIgnoreCase) && 
-                                            (string.Equals(status.Value, "DELIVERY_ACCEPTED", StringComparison.OrdinalIgnoreCase) || 
-                                             string.Equals(status.Value, "CANCELED", StringComparison.OrdinalIgnoreCase))) ||
-                                        (string.Equals(order.Status, "DELIVERY_ACCEPTED", StringComparison.OrdinalIgnoreCase) && 
-                                            (string.Equals(status.Value, "DELIVERY_IN_PROGRESS", StringComparison.OrdinalIgnoreCase) || 
-                                             string.Equals(status.Value, "CANCELED", StringComparison.OrdinalIgnoreCase))) ||
-                                        (string.Equals(order.Status, "DELIVERY_IN_PROGRESS", StringComparison.OrdinalIgnoreCase) && 
-                                            string.Equals(status.Value, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+                                            string.Equals(status.Value, "REQUEST_DELIVERY", StringComparison.OrdinalIgnoreCase))
                                     )
                                     {
                                         <option value="@status.Value">@status.Text</option>

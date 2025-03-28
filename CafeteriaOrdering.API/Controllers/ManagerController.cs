@@ -387,8 +387,8 @@ namespace ManagerAPI.Controllers
                 order.Status = OrderConstants.OrderStatus.DELIVERY_ACCEPTED.ToString();
 
                 // Chèn vào bảng Deliveries
-                var delivery = new Delivery { OrderId = orderId };
-                _context.Deliveries.Add(delivery);
+                // var delivery = new Delivery { OrderId = orderId };
+                // _context.Deliveries.Add(delivery);
             }
 
             order.Status = request.Status;
