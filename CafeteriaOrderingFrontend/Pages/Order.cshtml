@@ -69,7 +69,7 @@
                             </div>
                             <div class="col-md-6">
                                 <strong>Total Amount:</strong>
-                                <p>$@order.TotalAmount.ToString("N2")</p>
+                                <p>VND @order.TotalAmount.ToString("N2")</p>
                             </div>
                         </div>
 
@@ -210,7 +210,7 @@
                                         <tr>
                                             <td>${item.item?.itemName ?? 'Unknown Item'}</td>
                                             <td>${item.quantity}</td>
-                                            <td>$${item.price.toFixed(2)}</td>
+                                            <td>VND ${item.price.toFixed(2)}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -366,15 +366,15 @@
                                         <tr>
                                             <td>${item.itemName}</td>
                                             <td>${item.quantity}</td>
-                                            <td>$${(item.price / item.quantity).toFixed(2)}</td>
-                                            <td>$${item.price.toFixed(2)}</td>
+                                            <td>VND ${(item.price / item.quantity).toFixed(2)}</td>
+                                            <td>VND ${item.price.toFixed(2)}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
                                 <tfoot>
                                     <tr>
                                         <td colspan="3" class="text-end"><strong>Order Total:</strong></td>
-                                        <td><strong>$${result.items.reduce((sum, item) => sum + item.price, 0).toFixed(2)}</strong></td>
+                                        <td><strong>VND ${result.items.reduce((sum, item) => sum + item.price, 0).toFixed(2)}</strong></td>
                                     </tr>
                                 </tfoot>
                             </table>
