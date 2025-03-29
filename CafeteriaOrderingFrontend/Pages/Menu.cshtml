@@ -461,7 +461,7 @@
                     row.innerHTML = `
                         <td>${item.itemName || ''}</td>
                         <td>${item.description || ''}</td>
-                        <td>$${(item.price || 0).toFixed(2)}</td>
+                        <td>VND ${(item.price || 0).toFixed(2)}</td>
                         <td>${item.itemType || ''}</td>
                         <td>
                             <span class="badge ${item.isStatus ? 'bg-success' : 'bg-danger'}">
@@ -513,7 +513,7 @@
                             row.innerHTML = `
                                 <td>${item.itemName || ''}</td>
                                 <td>${item.description || ''}</td>
-                                <td>$${(item.price || 0).toFixed(2)}</td>
+                                <td>VND ${(item.price || 0).toFixed(2)}</td>
                                 <td>${item.itemType || ''}</td>
                                 <td>
                                     <span class="badge ${item.isStatus ? 'bg-success' : 'bg-danger'}">

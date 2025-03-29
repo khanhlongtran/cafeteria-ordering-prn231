@@ -385,10 +385,6 @@ namespace ManagerAPI.Controllers
             if (request.Status == OrderConstants.OrderStatus.REQUEST_DELIVERY.ToString())
             {
                 order.Status = OrderConstants.OrderStatus.DELIVERY_ACCEPTED.ToString();
-
-                //// Chèn vào bảng Deliveries
-                //var delivery = new Delivery { OrderId = orderId };
-                //_context.Deliveries.Add(delivery);
             }
 
             order.Status = request.Status;
@@ -414,6 +410,7 @@ namespace ManagerAPI.Controllers
         {
             var orders = _context.Orders
                 .Where(o => o.OrderItems.Any(oi => oi.Item.Menu.ManagerId == managerId))
+                .Include(o => o.Address)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Item)
                 .Include(o => o.Address) // Thêm Address để lấy AddressLine
