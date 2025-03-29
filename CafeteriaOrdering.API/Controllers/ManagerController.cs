@@ -9,6 +9,7 @@ using CafeteriaOrdering.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using CafeteriaOrdering.API.DTO;
 using CafeteriaOrdering.API.Constants;
+using System.Security.Claims;
 
 namespace ManagerAPI.Controllers
 {
@@ -372,7 +373,6 @@ namespace ManagerAPI.Controllers
 
 
 
-
         [HttpPut("UpdateOrderStatus/{orderId}")]
         public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateStatusRequest request)
         {
@@ -385,10 +385,6 @@ namespace ManagerAPI.Controllers
             if (request.Status == OrderConstants.OrderStatus.REQUEST_DELIVERY.ToString())
             {
                 order.Status = OrderConstants.OrderStatus.DELIVERY_ACCEPTED.ToString();
-
-                // Chèn vào bảng Deliveries
-                // var delivery = new Delivery { OrderId = orderId };
-                // _context.Deliveries.Add(delivery);
             }
 
             order.Status = request.Status;
@@ -398,6 +394,7 @@ namespace ManagerAPI.Controllers
 
             return Ok(new { message = "Order status updated successfully" });
         }
+
 
 
         // Model cho request body
@@ -416,6 +413,7 @@ namespace ManagerAPI.Controllers
                 .Include(o => o.Address)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Item)
+                .Include(o => o.Address) // Thêm Address để lấy AddressLine
                 .ToList();
 
             if (!orders.Any())
@@ -425,6 +423,7 @@ namespace ManagerAPI.Controllers
 
             return Ok(orders);
         }
+
 
 
 
