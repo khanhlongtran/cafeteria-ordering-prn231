@@ -413,6 +413,7 @@ namespace ManagerAPI.Controllers
         {
             var orders = _context.Orders
                 .Where(o => o.OrderItems.Any(oi => oi.Item.Menu.ManagerId == managerId))
+                .Include(o => o.Address)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Item)
                 .ToList();
